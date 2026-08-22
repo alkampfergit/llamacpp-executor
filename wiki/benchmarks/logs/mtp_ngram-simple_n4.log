@@ -1,0 +1,47 @@
+[34m0.00.109.354[0m [32mI [0mcmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+[34m0.00.225.668[0m [35mW srv  llama_server: -----------------
+[0m[34m0.00.225.675[0m [35mW srv  llama_server: CORS is set to allow all origins ('*') and no API key is set
+[0m[34m0.00.225.675[0m [35mW srv  llama_server: this can be a security risk (cross-origin attacks)
+[0m[34m0.00.225.676[0m [35mW srv  llama_server: more info: https://github.com/ggml-org/llama.cpp/pull/25655
+[0m[34m0.00.225.676[0m [35mW srv  llama_server: -----------------
+[0m[34m0.00.242.283[0m [32mI [0msrv    load_model: loading model 'S:\HuggingFace\lmstudio\Jackrong\Qwopus3.6-35B-A3B-Coder-MTP-GGUF\Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf'
+[34m0.00.647.858[0m [35mW model has unused tensor blk.40.attn_norm.weight (size = 8192 bytes) -- ignoring
+[0m[34m0.00.647.873[0m [35mW model has unused tensor blk.40.post_attention_norm.weight (size = 8192 bytes) -- ignoring
+[0m[34m0.00.647.895[0m [35mW model has unused tensor blk.40.attn_q.weight (size = 9437184 bytes) -- ignoring
+[0m[34m0.00.647.902[0m [35mW model has unused tensor blk.40.attn_k.weight (size = 589824 bytes) -- ignoring
+[0m[34m0.00.647.910[0m [35mW model has unused tensor blk.40.attn_v.weight (size = 860160 bytes) -- ignoring
+[0m[34m0.00.647.937[0m [35mW model has unused tensor blk.40.attn_output.weight (size = 4718592 bytes) -- ignoring
+[0m[34m0.00.647.945[0m [35mW model has unused tensor blk.40.attn_q_norm.weight (size = 1024 bytes) -- ignoring
+[0m[34m0.00.647.953[0m [35mW model has unused tensor blk.40.attn_k_norm.weight (size = 1024 bytes) -- ignoring
+[0m[34m0.00.647.961[0m [35mW model has unused tensor blk.40.ffn_gate_inp.weight (size = 2097152 bytes) -- ignoring
+[0m[34m0.00.647.969[0m [35mW model has unused tensor blk.40.ffn_down_exps.weight (size = 220200960 bytes) -- ignoring
+[0m[34m0.00.647.985[0m [35mW model has unused tensor blk.40.ffn_gate_exps.weight (size = 150994944 bytes) -- ignoring
+[0m[34m0.00.647.994[0m [35mW model has unused tensor blk.40.ffn_up_exps.weight (size = 150994944 bytes) -- ignoring
+[0m[34m0.00.648.003[0m [35mW model has unused tensor blk.40.ffn_gate_inp_shexp.weight (size = 8192 bytes) -- ignoring
+[0m[34m0.00.648.011[0m [35mW model has unused tensor blk.40.ffn_gate_shexp.weight (size = 589824 bytes) -- ignoring
+[0m[34m0.00.648.020[0m [35mW model has unused tensor blk.40.ffn_up_shexp.weight (size = 589824 bytes) -- ignoring
+[0m[34m0.00.648.028[0m [35mW model has unused tensor blk.40.ffn_down_shexp.weight (size = 860160 bytes) -- ignoring
+[0m[34m0.00.648.038[0m [35mW model has unused tensor blk.40.nextn.eh_proj.weight (size = 4718592 bytes) -- ignoring
+[0m[34m0.00.648.047[0m [35mW model has unused tensor blk.40.nextn.enorm.weight (size = 8192 bytes) -- ignoring
+[0m[34m0.00.648.055[0m [35mW model has unused tensor blk.40.nextn.hnorm.weight (size = 8192 bytes) -- ignoring
+[0m[34m0.00.648.080[0m [35mW model has unused tensor blk.40.nextn.shared_head_norm.weight (size = 8192 bytes) -- ignoring
+[0m[34m0.09.886.735[0m [32mI [0mcmn          init: llama threadpool init, n_threads = 12
+[34m0.10.138.850[0m [32mI [0msrv    load_model: initializing, n_slots = 1, n_ctx_slot = 65536, kv_unified = 'false'
+[34m0.10.144.600[0m [32mI [0msrv          init: chat template supports preserving reasoning, consider enabling it via --reasoning-preserve
+[34m0.10.144.620[0m [32mI [0msrv  llama_server: model loaded
+[34m0.10.144.623[0m [32mI [0msrv  llama_server: listening on http://127.0.0.1:9078
+[34m0.12.029.875[0m [32mI [0mslot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = -1
+[34m0.12.029.932[0m [32mI [0mslot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+[34m0.15.430.431[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt eval time =     561.44 ms /    57 tokens (    9.85 ms per token,   101.52 tokens per second)
+[34m0.15.430.439[0m [32mI [0mslot print_timing: id  0 | task 0 |        eval time =    2839.05 ms /   300 tokens (    9.50 ms per token,   105.32 tokens per second)
+[34m0.15.430.440[0m [32mI [0mslot print_timing: id  0 | task 0 |       total time =    3400.49 ms /   357 tokens
+[34m0.15.430.441[0m [32mI [0mslot print_timing: id  0 | task 0 |    graphs reused =        297
+[34m0.15.430.486[0m [32mI [0mslot      release: id  0 | task 0 | stop processing: n_tokens = 356, truncated = 0
+[34m0.15.433.170[0m [32mI [0mslot get_availabl: id  0 | task -1 | selected slot by LCP similarity, f_sim_best = 1.000 (> 0.100 thold), f_keep = 0.160
+[34m0.15.477.425[0m [32mI [0mslot launch_slot_: id  0 | task 302 | processing task, is_child = 0
+[34m0.18.552.270[0m [32mI [0mslot print_timing: id  0 | task 302 | n_gen =    294, tg =  97.61 t/s, tg_3s =  97.95 t/s
+[34m0.18.613.554[0m [32mI [0mslot print_timing: id  0 | task 302 | prompt eval time =      73.17 ms /     4 tokens (   18.29 ms per token,    54.66 tokens per second)
+[34m0.18.613.560[0m [32mI [0mslot print_timing: id  0 | task 302 |        eval time =    3062.93 ms /   300 tokens (   10.24 ms per token,    97.62 tokens per second)
+[34m0.18.613.561[0m [32mI [0mslot print_timing: id  0 | task 302 |       total time =    3136.11 ms /   304 tokens
+[34m0.18.613.562[0m [32mI [0mslot print_timing: id  0 | task 302 |    graphs reused =        594
+[34m0.18.613.593[0m [32mI [0mslot      release: id  0 | task 302 | stop processing: n_tokens = 356, truncated = 0

@@ -1,0 +1,29 @@
+0.00.657.647 W model has unused tensor blk.40.attn_norm.weight (size = 8192 bytes) -- ignoring
+0.00.657.662 W model has unused tensor blk.40.post_attention_norm.weight (size = 8192 bytes) -- ignoring
+0.00.657.682 W model has unused tensor blk.40.attn_q.weight (size = 9437184 bytes) -- ignoring
+0.00.657.689 W model has unused tensor blk.40.attn_k.weight (size = 589824 bytes) -- ignoring
+0.00.657.696 W model has unused tensor blk.40.attn_v.weight (size = 860160 bytes) -- ignoring
+0.00.657.723 W model has unused tensor blk.40.attn_output.weight (size = 4718592 bytes) -- ignoring
+0.00.657.732 W model has unused tensor blk.40.attn_q_norm.weight (size = 1024 bytes) -- ignoring
+0.00.657.740 W model has unused tensor blk.40.attn_k_norm.weight (size = 1024 bytes) -- ignoring
+0.00.657.748 W model has unused tensor blk.40.ffn_gate_inp.weight (size = 2097152 bytes) -- ignoring
+0.00.657.755 W model has unused tensor blk.40.ffn_down_exps.weight (size = 220200960 bytes) -- ignoring
+0.00.657.771 W model has unused tensor blk.40.ffn_gate_exps.weight (size = 150994944 bytes) -- ignoring
+0.00.657.780 W model has unused tensor blk.40.ffn_up_exps.weight (size = 150994944 bytes) -- ignoring
+0.00.657.789 W model has unused tensor blk.40.ffn_gate_inp_shexp.weight (size = 8192 bytes) -- ignoring
+0.00.657.798 W model has unused tensor blk.40.ffn_gate_shexp.weight (size = 589824 bytes) -- ignoring
+0.00.657.808 W model has unused tensor blk.40.ffn_up_shexp.weight (size = 589824 bytes) -- ignoring
+0.00.657.816 W model has unused tensor blk.40.ffn_down_shexp.weight (size = 860160 bytes) -- ignoring
+0.00.657.826 W model has unused tensor blk.40.nextn.eh_proj.weight (size = 4718592 bytes) -- ignoring
+0.00.657.837 W model has unused tensor blk.40.nextn.enorm.weight (size = 8192 bytes) -- ignoring
+0.00.657.846 W model has unused tensor blk.40.nextn.hnorm.weight (size = 8192 bytes) -- ignoring
+0.00.657.873 W model has unused tensor blk.40.nextn.shared_head_norm.weight (size = 8192 bytes) -- ignoring
+0.09.455.401 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 831.13 MiB on device 0: cudaMalloc failed: out of memory
+0.09.455.411 E ggml_gallocr_reserve_n_impl: failed to allocate CUDA0 buffer of size 871498240
+0.09.455.413 E graph_reserve: failed to allocate compute buffers
+0.09.455.435 W sched_reserve: compute buffer allocation failed, retrying without pipeline parallelism
+0.09.515.876 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 433.28 MiB on device 0: cudaMalloc failed: out of memory
+0.09.515.881 E ggml_gallocr_reserve_n_impl: failed to allocate CUDA0 buffer of size 454328448
+0.09.515.883 E graph_reserve: failed to allocate compute buffers
+llama_batched_bench: error: failed to create the llama_context
+0.09.523.462 E llama_init_from_model: failed to initialize the context: failed to allocate compute pp buffers

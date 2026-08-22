@@ -1,0 +1,69 @@
+# ===========================================================================
+#  Prebuilt llama.cpp binaries living in the ROOT of this folder.
+#
+#  These are the shipped Windows CUDA build: 33 DLLs (~668 MB, cublasLt64_13
+#  alone is 460 MB) and 22 EXEs. They are redistributable artifacts, not
+#  source, and must never enter git history -- once committed, that 668 MB is
+#  permanent even if a later commit deletes it.
+#
+#  The leading "/" anchors each pattern to THIS directory only, so nothing
+#  inside the llama.cpp submodule is affected (a submodule is a separate repo
+#  with its own rules regardless, but anchoring keeps the intent explicit).
+# ===========================================================================
+/*.dll
+/*.exe
+/*.lib
+/*.exp
+/*.pdb
+/*.ilk
+/*.obj
+
+# ---------------------------------------------------------------------------
+#  Local build trees, if you ever compile here or alongside the submodule
+# ---------------------------------------------------------------------------
+build/
+build-*/
+out/
+cmake-build-*/
+install/
+.cache/
+
+# ---------------------------------------------------------------------------
+#  Model weights. Never commit these -- a single GGUF here is 15-20 GB.
+# ---------------------------------------------------------------------------
+*.gguf
+*.gguf.*
+*.safetensors
+*.bin
+*.pt
+*.onnx
+
+# ---------------------------------------------------------------------------
+#  Regenerable benchmark scratch.
+#
+#  KEPT ON PURPOSE (small, and it is the evidence behind the wiki's numbers):
+#    wiki/benchmarks/results.tsv        every throughput run, append-only
+#    wiki/benchmarks/needle-results.md  quality-gate results
+#    wiki/benchmarks/mtp-results.md     speculative-decoding results
+#    wiki/benchmarks/logs/*.txt         per-run llama.cpp output (~152 KB)
+#
+#  IGNORED: the ~400 KB synthetic haystack (needle-test.ps1 rebuilds it on
+#  demand) and server logs, which grow without bound while a server runs.
+# ---------------------------------------------------------------------------
+wiki/benchmarks/needle-prompt.txt
+wiki/benchmarks/server.log
+wiki/benchmarks/logs/server_*.log
+bench-results/
+
+# ---------------------------------------------------------------------------
+#  Windows / OneDrive cruft. This folder lives inside OneDrive, which drops
+#  desktop.ini files around and creates conflicted copies.
+# ---------------------------------------------------------------------------
+desktop.ini
+Thumbs.db
+ehthumbs.db
+$RECYCLE.BIN/
+*.lnk
+*.tmp
+*~
+*-conflicted copy*
