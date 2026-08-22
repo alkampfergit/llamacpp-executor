@@ -46,6 +46,7 @@ and come back later when you want to know *why* it looks like that.
 | 8 | [Troubleshooting](08-troubleshooting.md) | Slow prefill, silent OOM, gibberish output, and the Windows driver trap that ruins everything |
 | 9 | [Speculative decoding & MTP](09-speculative-decoding.md) | Making generation faster without changing the model |
 | 10 | [Qwen3.8-27B results](10-results-qwen38-27b.md) | A **dense** model on the same box — where the MoE tuning advice does and does not transfer |
+| 11 | [Choosing the *file*](11-quant-selection-qwen38.md) | Which GGUF quant to download, and an audit of a third-party report: what survived measurement, what cost 27× the host buffer, and the one thing it got right that we never tested |
 
 ---
 
