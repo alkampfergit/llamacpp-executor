@@ -10,7 +10,8 @@ loss. They are ordered by how much damage they do.
 3. [CPU expert offload — cheap for generation, brutal for prefill](#3-cpu-expert-offload)
 4. [Pipeline parallelism — a loss on mismatched GPUs](#4-pipeline-parallelism)
 5. [The `-np` context divisor](#5-the--np-context-divisor)
-6. [Lesser traps](#6-lesser-traps)
+6. [Speculative decoding on a sparse MoE](#6-speculative-decoding-on-a-sparse-moe)
+7. [Lesser traps](#7-lesser-traps)
 
 ---
 
@@ -190,7 +191,57 @@ assuming; recent builds default to unified accounting, which is more forgiving.
 
 ---
 
-## 6. Lesser traps
+## 6. Speculative decoding on a sparse MoE
+
+**Symptom:** you enable `--spec-type draft-mtp`, the server reports **excellent** draft
+acceptance, and end-to-end generation gets *slower*.
+
+Measured on a 35B-A3B MoE (~3 B active), generating 300 tokens of fresh code:
+
+| Config | TG t/s | vs baseline | Draft acceptance |
+| --- | --- | --- | --- |
+| baseline | **97–100** | — | — |
+| `draft-mtp --spec-draft-n-max 1` | 90.1 | **−7%** | — |
+| `draft-mtp --spec-draft-n-max 2` | 70.3 | **−29%** | **0.67–0.72, mean len 2.34** |
+| `draft-mtp --spec-draft-n-max 3` | server OOM | — | — |
+| `ngram-simple` n 2/4/8 | 96.6–97.6 | 0% (noise) | — |
+
+**Cause.** The server log shows how drafts are produced:
+
+```
+common_speculative_init_result: creating MTP draft context against the target model
+```
+
+Each drafted token costs roughly a **full forward pass**. Speculative decoding is a trade of
+*compute* for *latency*, and it needs the target model's per-token pass to be expensive
+enough to amortise the drafting. A sparse MoE activating ~3 B of 35.5 B parameters has almost
+nothing to amortise, so the drafting overhead is not hidden — it *is* the bill. The cost
+scales directly with `n-max`: −7% at 1, −29% at 2.
+
+This is why vendor figures for the same family show **1.73× on a dense 27 B** model but only
+**1.17× on the 35B-A3B MoE**. On slower hardware that trend continues past 1.0× into a loss.
+
+> **THE RULE: high draft acceptance does not mean a win.** 70% acceptance and 2.34 tokens per
+> step still lost 29%. Always compare end-to-end tokens/second against a no-drafting baseline
+> on the same prompt. Never conclude from the acceptance rate, and never from vendor claims.
+
+**Expectations by model type:**
+
+| Model | Prior expectation |
+| --- | --- |
+| Dense, large (27 B+) | Speculation likely helps — expensive pass to amortise |
+| Sparse MoE, low active params | Likely neutral-to-harmful — measure before enabling |
+| Any | `ngram-*` drafters cost 0 VRAM and ~0 speed, so they are a safe bet |
+
+**A second trap inside this one:** n-gram drafters measured 0% here, but the test asked the
+model to *write new code*. They work by replaying repeated token sequences from context, so
+there was nothing to copy. That is a limitation of the test, not a verdict. Test n-gram
+drafting on **edit-style** work (refactor this, add type hints to this file) where the output
+largely reproduces the input.
+
+---
+
+## 7. Lesser traps
 
 | Trap | Reality |
 | --- | --- |

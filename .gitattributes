@@ -1,0 +1,21 @@
+# ===========================================================================
+#  Line endings must NOT be normalised for benchmark inputs.
+#
+#  wiki/benchmarks/needle-prompt.txt is a 404 KB, 107,732-token prompt used as
+#  a fixed long-context quality gate. It has ~3000 lines, so converting CRLF
+#  to LF (or back) changes the byte count by ~3 KB and therefore changes the
+#  TOKEN COUNT. The measured figure "107,732 tokens" would silently stop
+#  reproducing on a machine with different autocrlf settings, and results
+#  taken before and after the change would not be comparable.
+#
+#  "-text" tells git to store and check out the file byte-for-byte, on every
+#  platform, regardless of core.autocrlf.
+# ===========================================================================
+wiki/benchmarks/needle-prompt.txt -text
+
+# Captured llama.cpp output: keep exactly as recorded, it is evidence.
+wiki/benchmarks/logs/**            -text
+wiki/benchmarks/results.tsv        -text
+
+# PowerShell scripts want CRLF on Windows; leave them to the working tree.
+*.ps1 text=auto

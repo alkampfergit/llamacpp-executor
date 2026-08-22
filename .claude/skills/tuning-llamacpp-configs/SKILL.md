@@ -205,7 +205,30 @@ When the user cares about quality, offer the pair — a `q8_0` profile and a `q4
 with the measured speed difference stated, and let them choose. Often the best answer is
 **`q8_0` with slightly less context**, which can beat `q4_0` at full context on both axes.
 
-### 9. Deliver
+### 9. Decide on speculative decoding — by measurement, never by assumption
+
+Only ever evaluate it **after** the placement/memory work above, because it competes for the
+same VRAM. It cannot be measured with either bench tool (neither supports `--spec-type`), so
+it needs `llama-server` over HTTP with a **generation-heavy** request — short prompt, long
+output — since it never accelerates prefill.
+
+```powershell
+./scripts/mtp-test.ps1 -Model <model.gguf>       # baseline, then draft-mtp n-max 1..6
+```
+
+Judge it on **end-to-end tokens/second versus a no-drafting baseline on the same prompt.**
+Draft acceptance is not the metric — 67–72% acceptance still lost 29% on a sparse MoE
+(see trap 6). Rough priors:
+
+- **Large dense model** → likely a win; the expensive per-token pass amortises the draft.
+- **Sparse MoE, few active params** → likely a loss; measure before enabling.
+- **`ngram-*`** → 0 VRAM, ~0 risk. Test on *edit-style* work, where output copies input.
+
+Also check the model even has a draft head: `n_layer_all > n_layer` and
+`nextn_predict_layers` in the metadata. Activating it loads that layer and costs real VRAM
+(~530 MiB on the reference model), which a tight configuration may not have.
+
+### 10. Deliver
 
 Emit a single copy-paste launch command, grouped by intent, plus the measured PP/TG and
 peak VRAM, plus what was given up. State explicitly which numbers are measured and which
@@ -249,6 +272,15 @@ Steps 3, 4 and 6 are counter-intuitive and are usually the answer:
 - **`GGML_SCHED_MAX_COPIES` is not a runtime environment variable.** It is a compile-time
   `#define` (default 4). Never tell the user to `$env:`-set it, and never credit a
   measurement to it. To control it: `cmake -B build -DGGML_CUDA=ON -DLLAMA_SCHED_MAX_COPIES=1`.
+- **Speculative decoding must be justified per model, never assumed.** On a sparse MoE it
+  measured a **net loss** (−7% at `n-max 1`, −29% at `n-max 2`) *despite 67–72% draft
+  acceptance* — each drafted token costs about a full forward pass, and a ~3 B-active model
+  has nothing to amortise. **High acceptance is not a win; only end-to-end tokens/second is.**
+  Expect it to help on large dense models and to hurt on sparse MoE. `ngram-*` drafters cost
+  no VRAM and measured ~0%, so they are a safe bet but not a free win.
+- **Commit benchmark inputs, don't just regenerate them.** A fixed long-context prompt must be
+  byte-identical across configurations and machines; line-ending normalisation alone changes
+  its token count. Store the artifact and mark it `-text` in `.gitattributes`.
 - **Verify whether a knob is runtime or compile-time before believing a result you attribute
   to it.** A gain smaller than the machine's noise floor is not evidence of anything.
 - `-mg` does nothing with `-sm layer`. Delete it if you see it.
