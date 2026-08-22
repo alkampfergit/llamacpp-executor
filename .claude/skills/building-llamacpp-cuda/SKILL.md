@@ -161,6 +161,26 @@ a large volume of `warning #177-D` / `#221-D` from CUDA template instantiation.
 
 ## 7. Standing rules
 
+### 🚫 Never touch the baseline binaries
+
+Prebuilt binaries sitting **in the repository root** are the **baseline** and are immutable.
+Never overwrite, replace, delete, or copy over them, and never copy a fresh build on top of
+them — not even temporarily.
+
+Every recorded measurement in `wiki/benchmarks/` was produced by those binaries. Swapping them
+out makes old and new numbers silently incomparable, and nothing in the data would reveal it.
+
+**Build in place and run from llama.cpp's standard output directory instead:**
+
+```
+<repo>/llama.cpp/build/bin/        <- run new builds from HERE
+<repo>/*.exe                        <- baseline, never touched
+```
+
+To compare a rebuild against the baseline, run **both** and label which binary produced which
+numbers. Report the build with every result — `llama-server.exe --version` prints
+`version: … (build N, commit …)`.
+
 - **Never delete a working binary set before the new build passes its smoke test.** Build into
   a separate tree and switch over only after verifying.
 - **A generator change requires a clean build directory.** `Does not match the generator used

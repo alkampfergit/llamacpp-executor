@@ -140,6 +140,32 @@ if ($CpuOnly) {
 
 # --- 4. build dir / generator consistency ---------------------------------
 $bd = Join-Path $Repo $BuildDir
+
+# GUARD: never build into, or over, a directory holding baseline binaries.
+# The prebuilt executables beside the source tree are a measurement baseline;
+# overwriting them silently invalidates every previously recorded benchmark,
+# because old and new numbers stop being comparable and the data cannot say so.
+$bdFull      = [IO.Path]::GetFullPath($bd).TrimEnd('\')
+$repoFull    = [IO.Path]::GetFullPath($Repo).TrimEnd('\')
+$parentFull  = [IO.Path]::GetFullPath((Split-Path $Repo -Parent)).TrimEnd('\')
+$baselineHit = (Test-Path (Join-Path $bdFull 'llama-server.exe')) -and
+               -not (Test-Path (Join-Path $bdFull 'CMakeCache.txt'))
+if ($bdFull -eq $repoFull -or $bdFull -eq $parentFull -or $baselineHit) {
+  Fail @"
+Refusing to build into '$bdFull'.
+
+That directory is the source root, its parent, or already holds llama-*.exe with
+no CMakeCache.txt -- i.e. a BASELINE binary set, not a build tree.
+
+Those binaries are immutable: every recorded measurement was produced by them, so
+replacing them makes past and future numbers silently incomparable.
+
+Build into llama.cpp's standard output directory and run from there:
+    -BuildDir build        ->  $repoFull\build\bin\
+Then compare against the baseline by running BOTH and labelling which binary
+produced which numbers.
+"@
+}
 if ($Clean -and (Test-Path $bd)) {
   Step "Cleaning $BuildDir"
   Remove-Item $bd -Recurse -Force
@@ -234,4 +260,9 @@ if ($probe -and (Test-Path $probe)) {
 }
 
 Write-Host "`nBinaries: $bin" -ForegroundColor Green
-Write-Host "Do not overwrite a known-good binary set until you have re-verified throughput." -ForegroundColor DarkGray
+Write-Host "RUN THEM FROM HERE. Do not copy them over the baseline binaries beside the" -ForegroundColor Yellow
+Write-Host "source tree -- those are immutable, and every recorded benchmark was produced" -ForegroundColor Yellow
+Write-Host "by them. To compare, run BOTH and label which build produced which numbers." -ForegroundColor Yellow
+Write-Host ""
+Write-Host "  new build : $bin\llama-server.exe" -ForegroundColor DarkGray
+Write-Host "  baseline  : $parentFull\llama-server.exe  (do not touch)" -ForegroundColor DarkGray

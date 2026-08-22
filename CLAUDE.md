@@ -46,6 +46,33 @@ git rebase upstream/master          # NOTE: master, not main
   to the code you just read. (`llama-bench` has no `--version`; use `llama-server` or
   `llama-cli`, or read the `build:` line at the end of normal `llama-bench` output.)
 
+## NEVER modify the executables in the root
+
+The `*.exe` and `*.dll` in `S:\OneDrive\Tools\llamacpp\` are the **baseline** — build
+`fe8156f78 (10509)`. They are immutable.
+
+- **Never** overwrite, replace, delete, or copy over them.
+- **Never** copy freshly built binaries into the root, not even "just to try it".
+
+Every one of the 73 measurements in `wiki/benchmarks/results.tsv` was taken with these
+binaries. Replacing them silently invalidates the entire recorded dataset, because a later
+run would no longer be comparable to an earlier one and nothing in the data would say so.
+
+**When a rebuild is needed**, build in place and run from llama.cpp's standard output
+directory:
+
+```
+S:\OneDrive\Tools\llamacpp\llama.cpp\build\bin\        <- new builds run from HERE
+S:\OneDrive\Tools\llamacpp\*.exe                        <- baseline, never touched
+```
+
+Ninja is single-config, so binaries land flat in `build\bin\` — there is no `build\bin\Release\`.
+
+To compare a rebuild against the baseline, run **both** and label which binary produced which
+numbers; never swap one in for the other. State the build in any result you report:
+`llama-server.exe --version` gives `version: 0.1.2-dev (build 10509, commit fe8156f78)` for the
+baseline.
+
 ## Skills
 
 - `tuning-llamacpp-configs` — find optimal runtime flags (context, ubatch, split, KV type).
