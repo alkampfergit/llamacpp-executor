@@ -220,9 +220,16 @@ architectures from `nvidia-smi`, and smoke-tests the result:
 
 - `GGML_CUDA_FA_ALL_QUANTS=ON` enables `-ctk q8_0 -ctv q4_0`: precise keys, compact values.
   **Measured at ×30.5 prefill, and free thereafter** — see [chapter 14](14-build-experiment.md).
-- `GGML_SCHED_MAX_COPIES=1` frees **~845 MiB** (~422 MiB on each card), deterministically.
+- `GGML_SCHED_MAX_COPIES=1` frees ~845 MiB **at `-ub 512` only** — at `-ub 1024` both builds
+  peak identically and the saving disappears (§14.9). Do not budget for it.
 
-> ⚠️ **Correction.** This section used to say `GGML_SCHED_MAX_COPIES=1` "makes the fast
+> 🚫 **Neither flag makes anything faster.** Best config against best config, at matched key
+> precision, both at `-ub 1024`: control `q8_0`/`q8_0` = 1257.91 t/s / 22876 MiB, treatment
+> `q8_0`/`q4_0` = 1255.55 t/s / **21860 MiB**. Identical throughput, ~1 GiB less memory. The
+> whole return on this rebuild is VRAM headroom. If you want prefill throughput on this model,
+> **set `-ub 1024`** — worth 3.1% on the binaries you already have, no compiler required.
+
+> ⚠️ **Correction (1 of 2).** This section used to say `GGML_SCHED_MAX_COPIES=1` "makes the fast
 > non-pipelined path deterministic rather than a side effect of running out of memory."
 > [Chapter 14](14-build-experiment.md) measured that and **it is wrong.** There is no speed
 > gain — the treatment build was 3.2–3.4% *slower* on symmetric KV (inside the ±8% noise floor,
@@ -230,6 +237,11 @@ architectures from `nvidia-smi`, and smoke-tests the result:
 > non-pipelined fallback "measured faster" was an artefact: that fallback fires when an
 > allocation *fails*, so what was being measured was a run that had stopped spilling into
 > host RAM. The flag buys you the ~845 MiB that caused that difference — not the speed.
+>
+> ⚠️ **Correction (2 of 2).** This section also expected the flag to "free enough to run `q8_0`
+> KV at `-ub 1024` at full 130k". It does not need to: [§14.9](14-build-experiment.md) shows the
+> **control** already runs `-ub 1024` at full 130k in 22876 MiB, and gains 3.1% doing so. There
+> was no locked door for the freed memory to open.
 
 Cost: **10.4 min** to compile on this machine, and `ggml-cuda.dll` grows 84.2 → 116.2 MB.
 `FA_ALL_QUANTS` was expected to dominate the compile and did not, so this is much cheaper to

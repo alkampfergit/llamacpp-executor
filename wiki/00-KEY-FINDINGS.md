@@ -96,6 +96,14 @@ penalty is not reduced, it is gone — so on a build with this flag, asymmetric 
 host compute, because all **49** kernels are compiled instead of **4**. Still unbanned rather
 than recommended — there is no quality evidence for any of them.
 
+> 🚫 **Do not read ×30.5 as "the rebuild is faster".** It is a penalty removed from a config
+> this page told you never to use, so it gains you nothing until you switch to that config —
+> and that is a *memory* decision. Best-against-best, both at `-ub 1024`: control
+> `q8_0`/`q8_0` 1257.91 t/s / 22876 MiB vs treatment `q8_0`/`q4_0` 1255.55 t/s / 21860 MiB.
+> **Same speed, ~1 GiB less VRAM.** The entire return is headroom
+> ([§14.9](14-build-experiment.md)). The cheap throughput win on this model is unrelated to any
+> flag: **`-ub 1024` instead of `-ub 512`, worth 3.1% on the binaries you already have.**
+
 ---
 
 ## 💡 A SMALLER KV cache can be FASTER

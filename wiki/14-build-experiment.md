@@ -389,6 +389,10 @@ The same number twice, on two unrelated KV configurations, split almost exactly 
 two cards of different sizes. That is not noise; that is four sets of split-input copies
 becoming one.
 
+> ⚠️ **But only at `-ub 512`.** §14.9 re-ran this at `-ub 1024` and the saving is **gone** —
+> both builds peak at exactly 22876 MiB. So this is a `-ub 512` result, not a general property
+> of the flag. Read §14.9 before acting on the 845 MiB.
+
 ### The correction this forces
 
 Neither build logged `retrying without pipeline parallelism` in any of the twelve runs. So the
@@ -465,3 +469,83 @@ Probe 'fa-q8q4' @('-ub','512','-ts','21,44','-ctk','q8_0','-ctv','q4_0',
 `-LlamaDir` selects which build is measured, and the harness now pins the child process's
 working directory to it. Without that, ggml resolves backend DLLs against the *caller's* cwd
 and can load one build's `ggml-cpu-haswell.dll` into another build's run.
+
+---
+
+## 14.9 So did any of this make anything *faster*? No.
+
+§14.6 and §14.7 answer the two hypotheses as posed, but neither answers the question a user
+actually cares about: **is my setup faster than it was?** It is not, and it is worth being
+blunt about why, because a ×30.5 in a table is easy to misread as a speed-up.
+
+The ×30.5 is a *penalty removal on a configuration nobody was running*. `q8_0`/`q4_0` at
+38 t/s was not a slow option anyone chose — §0 told readers never to use it. Removing a
+penalty from an unused config gains you nothing until you switch to that config, and switching
+to it is a memory decision, not a speed one.
+
+### The freed memory does not buy speed either
+
+The one remaining route to a real gain: `GGML_SCHED_MAX_COPIES=1` frees ~845 MiB at `-ub 512`,
+and a bigger `-ub` is historically worth real prefill throughput. Does the headroom afford
+`-ub 1024` at full 130k? Measured (single runs, `-ts 21,44`, `-c 130048`, `npp 8192`):
+
+| Build | KV | `-ub` | Prefill t/s | Peak VRAM |
+| --- | --- | --- | --- | --- |
+| CONTROL | `q8_0`/`q8_0` | 512 | 1219.89 | 23202 |
+| CONTROL | `q8_0`/`q8_0` | **1024** | **1257.91** | 22876 |
+| TREATMENT | `q8_0`/`q8_0` | **1024** | 1255.73 | 22876 |
+| TREATMENT | `q8_0`/`q4_0` | **1024** | 1255.55 | **21860** |
+| TREATMENT | `q8_0`/`q4_0` | 2048 | 1128.67 | 23153 |
+
+Three things fall out, and two of them contradict expectations set earlier in this chapter.
+
+**1. The control did not need the freed memory.** It runs `-ub 1024` at full 130k perfectly
+well — 22876 MiB, comfortably inside 24503 — and gains 3.1% doing so. There was no locked door
+for the 845 MiB to open. This retires the hope recorded in §7.5, which expected
+`SCHED_MAX_COPIES=1` to "free enough to run `q8_0` KV at `-ub 1024` at full 130k". It was
+already possible.
+
+**2. At `-ub 1024` the two builds are indistinguishable — in speed *and* in memory.** 1257.91
+vs 1255.73 t/s is 0.17%. Peak VRAM is *identical*, 22876 both. So the 845 MiB saving of §14.7
+and the 3.3% slowdown of §14.7 are **both** artefacts of `-ub 512`, and both vanish one
+notch up the ubatch curve. The mechanism (`n_copies` 4 → 1) is real and the source is
+unambiguous, but its observable effect at this context size is not the general constant §14.7
+implied. Caveat: these are single runs against the campaign's two-run means.
+
+**3. `-ub 2048` falls off**, 1128.67 t/s — matching the shape of the baseline ubatch curves in
+`benchmarks/results.tsv`, where this model peaks at 1024 and regresses at 2048. Nothing about
+the new build changes that shape.
+
+### The honest bottom line
+
+Best configuration each build can actually reach, at matched key precision:
+
+| | CONTROL best | TREATMENT best | Difference |
+| --- | --- | --- | --- |
+| Config | `q8_0`/`q8_0` @ `-ub 1024` | `q8_0`/`q4_0` @ `-ub 1024` | — |
+| Prefill | 1257.91 t/s | 1255.55 t/s | **−0.2% (noise)** |
+| Generation | 21.87 t/s | 21.93 t/s | unchanged |
+| Peak VRAM | 22876 MiB | **21860 MiB** | **−1016 MiB** |
+
+> **The entire return on this build is ~1 GiB of VRAM at identical throughput and identical
+> key precision.** Not one token per second.
+
+And note *which* flag delivers it. The 1016 MiB is `q4_0` values instead of `q8_0` values —
+the KV cache being literally smaller, which is arithmetic and does not evaporate at a different
+ubatch. That is `GGML_CUDA_FA_ALL_QUANTS` doing the work. `GGML_SCHED_MAX_COPIES=1`, on this
+evidence, contributes nothing at the operating point you would actually choose.
+
+### Is ~1 GiB worth a rebuild?
+
+On this box, plausibly yes — but for headroom, not speed:
+
+- The display GPU's idle usage has been observed drifting 703 → 1844 MiB between sessions. A
+  configuration with 1 GiB of slack survives that; one without it starts spilling silently.
+- It is close to the ~1.1 GiB an MTP draft graph needs (§10.13), which is the one thing on the
+  open list that *could* convert into real generation throughput.
+- It buys `q8_0` keys at roughly the memory price of `q4_0` keys — a quality-per-byte
+  improvement, if the quality holds. **Which is still unmeasured.**
+
+If what you want is prefill throughput, the lesson is duller and cheaper: **set `-ub 1024`.**
+That is worth 3.1% on the binaries you already have, needs no compiler, and this chapter would
+have found it sooner had the campaign not fixed `-ub 512` throughout.
