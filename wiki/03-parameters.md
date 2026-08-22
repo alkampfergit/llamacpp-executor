@@ -266,7 +266,7 @@ There are two real ways to get the lean path.
 **1. Rebuild (deterministic, recommended):**
 
 ```
-cmake -B build -DGGML_CUDA=ON -DLLAMA_SCHED_MAX_COPIES=1
+cmake -B build -DGGML_CUDA=ON -DGGML_SCHED_MAX_COPIES=1
 ```
 
 **2. Let memory pressure trigger the automatic fallback (what actually happens today):**
@@ -348,9 +348,10 @@ running on the CPU.
 | `-ncmoe` | `0` | Halves prefill per 2 layers |
 | `-mg` | omit | No effect with `-sm layer` |
 | `-fit` | `off` when benchmarking | Reproducibility |
-| `GGML_SCHED_MAX_COPIES` | **not settable at runtime** | Compile-time only: `-DLLAMA_SCHED_MAX_COPIES=1` |
+| `GGML_SCHED_MAX_COPIES` | **not settable at runtime** | Compile-time only: `-DGGML_SCHED_MAX_COPIES=1` |
 
 ---
 
 Next: [Chapter 4 — Budgeting your VRAM](04-vram-budget.md), where we stop guessing and start
 predicting.
+

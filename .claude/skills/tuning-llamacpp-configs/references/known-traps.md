@@ -158,7 +158,7 @@ attributed to it was variance.
 
 1. **Rebuild (deterministic, preferred):**
    ```
-   cmake -B build -DGGML_CUDA=ON -DLLAMA_SCHED_MAX_COPIES=1
+   cmake -B build -DGGML_CUDA=ON -DGGML_SCHED_MAX_COPIES=1
    ```
 2. **Raise `-ub` until the pipelined reserve fails** and let llama.cpp fall back on its own.
    This is what currently delivers the fastest measured configuration — but it means
@@ -256,4 +256,5 @@ largely reproduces the input.
 | `failed to fit params ... already set by user` | Not an error. The fitter stood down because you set `-ngl`. |
 | `cublasCreate ... resource allocation failed` | Out-of-memory under a different name. |
 | `unused tensor blk.N ... ignoring` | Expected on MTP/draft models; those weights cost nothing until `--spec-type` activates them. |
+
 

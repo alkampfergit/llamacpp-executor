@@ -248,7 +248,7 @@ judgement this skill encodes — the bottom two look attractive and are traps.
 | 3 | `q4_0/q4_0` instead of `q8_0/q8_0` (symmetric — still fast) | **negative — it is faster**, but **quality-gate it** |
 | 4 | Reduce `-c` a little (e.g. −2%) | **negative — prefill speeds up** |
 | 5 | `-ub` down one step | ~−20 to −30% prefill |
-| 6 | Rebuild `-DLLAMA_SCHED_MAX_COPIES=1` | **negative — it is faster** |
+| 6 | Rebuild `-DGGML_SCHED_MAX_COPIES=1` | **negative — it is faster** |
 | 7 | `-ncmoe N` (experts to CPU) | **~−69% prefill for 2 of 40 layers** |
 
 Steps 3, 4 and 6 are counter-intuitive and are usually the answer:
@@ -262,7 +262,7 @@ Steps 3, 4 and 6 are counter-intuitive and are usually the answer:
   card, and its 4 activation copies are often exactly what breaks the fit. But note:
   `GGML_SCHED_MAX_COPIES` is a **compile-time** define, **not** an environment variable.
   Setting `$env:GGML_SCHED_MAX_COPIES` does nothing. Either rebuild with
-  `-DLLAMA_SCHED_MAX_COPIES=1`, or raise `-ub` until the pipelined reserve fails and
+  `-DGGML_SCHED_MAX_COPIES=1`, or raise `-ub` until the pipelined reserve fails and
   llama.cpp falls back to the lean path on its own (see traps).
 
 ---
@@ -330,3 +330,4 @@ Load only what the current question needs.
 
 Requires: llama.cpp CUDA build with `llama-fit-params.exe`, `llama-batched-bench.exe` and
 `llama-server.exe`; `nvidia-smi` on PATH; PowerShell 7+.
+

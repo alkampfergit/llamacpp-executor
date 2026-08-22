@@ -214,7 +214,7 @@ a machine with an ±8% noise floor — and it got written into a wiki as fact.
 is not evidence.**
 
 The effect was real; the mechanism was not what I claimed. Reaching the lean path deliberately
-requires either a rebuild (`-DLLAMA_SCHED_MAX_COPIES=1`) or raising `-ub` until the pipelined
+requires either a rebuild (`-DGGML_SCHED_MAX_COPIES=1`) or raising `-ub` until the pipelined
 reserve fails on purpose.
 
 ### Step 9: the actual best configuration
@@ -298,3 +298,4 @@ took 32.5 s cold, while the next request with the same prefix evaluated **790 to
 8. **Right-sizing context is free speed** — it returns memory *and* speeds prefill.
 9. **Test `GGML_SCHED_MAX_COPIES=1` on any mismatched GPU pair.**
 10. **Reusing work beats optimising work.** Prompt caching was worth more than every flag.
+

@@ -228,7 +228,7 @@ Reproducible across three runs: 2757 / 2599 / 2594 (±3%).
 
 Two real ways to get the lean path:
 
-1. **Rebuild** — `cmake -B build -DGGML_CUDA=ON -DLLAMA_SCHED_MAX_COPIES=1`. Deterministic.
+1. **Rebuild** — `cmake -B build -DGGML_CUDA=ON -DGGML_SCHED_MAX_COPIES=1`. Deterministic.
 2. **Raise `-ub` until the pipelined reserve fails**, and let llama.cpp fall back:
    ```
    sched_reserve: compute buffer allocation failed, retrying without pipeline parallelism
@@ -282,3 +282,4 @@ For an agentic coding workload, best value first:
 
 The largest wins are not exotic: **do not overflow, do not over-allocate context, and reuse
 work already done.**
+

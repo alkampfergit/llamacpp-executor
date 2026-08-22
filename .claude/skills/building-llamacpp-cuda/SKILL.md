@@ -1,6 +1,6 @@
 ---
 name: building-llamacpp-cuda
-description: Build llama.cpp from source on Windows with CUDA, using the exact generator and toolchain combination that actually works on this machine. Use whenever the user wants to compile, build, or rebuild llama.cpp or ggml, needs a custom build option such as GGML_CUDA_FA_ALL_QUANTS or LLAMA_SCHED_MAX_COPIES, wants to build a PR or feature branch, or hits any of these failures: "No CUDA toolset found", cudafe++ died with ACCESS_VIOLATION 0xC0000005, error MSB3722, "Does not match the generator used previously", or a freshly built .exe that exits instantly with no message. Do NOT use it to tune an already-built binary's runtime flags (-ngl, -ub, -ctk, tensor split) — that is the tuning-llamacpp-configs skill.
+description: Build llama.cpp from source on Windows with CUDA, using the exact generator and toolchain combination that actually works on this machine. Use whenever the user wants to compile, build, or rebuild llama.cpp or ggml, needs a custom build option such as GGML_CUDA_FA_ALL_QUANTS or GGML_SCHED_MAX_COPIES, wants to build a PR or feature branch, or hits any of these failures: "No CUDA toolset found", cudafe++ died with ACCESS_VIOLATION 0xC0000005, error MSB3722, "Does not match the generator used previously", or a freshly built .exe that exits instantly with no message. Do NOT use it to tune an already-built binary's runtime flags (-ngl, -ub, -ctk, tensor split) — that is the tuning-llamacpp-configs skill.
 argument-hint: "[cmake options, e.g. -DGGML_CUDA_FA_ALL_QUANTS=ON]"
 shell: powershell
 allowed-tools: PowerShell Bash Read Write Edit Glob Grep
@@ -34,7 +34,7 @@ Use the bundled script. It encodes the working combination and validates each st
 
 ```powershell
 ./scripts/build-llamacpp.ps1
-./scripts/build-llamacpp.ps1 -CMakeExtra '-DGGML_CUDA_FA_ALL_QUANTS=ON','-DLLAMA_SCHED_MAX_COPIES=1'
+./scripts/build-llamacpp.ps1 -CMakeExtra '-DGGML_CUDA_FA_ALL_QUANTS=ON','-DGGML_SCHED_MAX_COPIES=1'
 ./scripts/build-llamacpp.ps1 -Repo S:/Develop/somewhere/llama.cpp -Targets llama-server
 ```
 
@@ -149,7 +149,7 @@ If it prints nothing, suspect missing runtime DLLs before suspecting the build.
 | `-DCMAKE_BUILD_TYPE=Release` | Mandatory. A Debug CUDA build is unusably slow. |
 | `-DCMAKE_CUDA_ARCHITECTURES="86;120"` | See §3. |
 | `-DGGML_CUDA_FA_ALL_QUANTS=ON` | Compiles the **full** flash-attention KV matrix. Without it only `f16/f16`, `bf16/bf16`, `q8_0/q8_0`, `q4_0/q4_0` exist and any other pair silently costs ~14×. Long compile, much larger binary. |
-| `-DLLAMA_SCHED_MAX_COPIES=1` | Disables pipeline parallelism at compile time (it is a `#define`, **not** an env var). Usually faster on mismatched GPUs. |
+| `-DGGML_SCHED_MAX_COPIES=1` | Disables pipeline parallelism at compile time (it is a `#define`, **not** an env var). Usually faster on mismatched GPUs. |
 | `-DGGML_CCACHE=OFF` | Silences the "ccache not found" warning. |
 | `--target llama-server` | Build one binary instead of everything — much faster when iterating. |
 
@@ -206,3 +206,4 @@ numbers. Report the build with every result — `llama-server.exe --version` pri
 
 - `scripts/build-llamacpp.ps1` — detects vcvars/ninja/CUDA arch, configures with Ninja inside
   the VS environment, builds, then smoke-tests the result. **Run it, don't read it.**
+

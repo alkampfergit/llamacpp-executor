@@ -58,7 +58,7 @@ $env:GGML_SCHED_MAX_COPIES = "1"
 #endif
 ```
 
-It is set at build time via CMake (`-DLLAMA_SCHED_MAX_COPIES=1`), and is never read from the
+It is set at build time via CMake (`-DGGML_SCHED_MAX_COPIES=1`), and is never read from the
 environment. The evidence was in my own logs: a run **with the variable set** still tried to
 allocate 1407 MiB of pipelined buffers and then fell back. The earlier "+13%" I attributed to
 it was run-to-run variance.
@@ -90,7 +90,7 @@ Mean ~2650, spread ±3%. This is a stable operating point, not a fluke.
 >
 > **The deterministic fix is to rebuild:**
 > ```
-> cmake -B build -DGGML_CUDA=ON -DLLAMA_SCHED_MAX_COPIES=1
+> cmake -B build -DGGML_CUDA=ON -DGGML_SCHED_MAX_COPIES=1
 > ```
 > That guarantees the lean path, makes behaviour monotonic in `-c` and `-ub`, and would very
 > likely let `q8_0` KV run at `-ub 1024` at full 130k — the best of both worlds. **Untested;
@@ -304,7 +304,7 @@ carries a near-full one. Sweep *downward* from the arithmetic suggestion.
 
 | Experiment | Why it matters |
 | --- | --- |
-| **Rebuild with `-DLLAMA_SCHED_MAX_COPIES=1`** | Makes the lean path deterministic instead of accidental; likely enables `q8_0` at `ub 1024` at full 130k — best of both worlds. **Top priority** |
+| **Rebuild with `-DGGML_SCHED_MAX_COPIES=1`** | Makes the lean path deterministic instead of accidental; likely enables `q8_0` at `ub 1024` at full 130k — best of both worlds. **Top priority** |
 | Rebuild with `-DGGML_CUDA_FA_ALL_QUANTS=ON` | Enables `q8_0` keys + `q4_0` values, arguably the ideal 130k layout (§6.3) |
 | `--spec-type draft-mtp`, `n-max 1…6` | The model ships an MTP head; ~1.17× claimed on 35B-A3B. Costs ~530 MiB. See [chapter 9](09-speculative-decoding.md) |
 | Harder quality gates for `q4_0` | Needle retrieval passed; reasoning and code-edit fidelity untested (§6.4) |
@@ -351,3 +351,4 @@ Synthetic (`llama-batched-bench`, 8192-token prompt) unless marked *real*.
 ---
 
 Next: [Chapter 7 — Recommended configurations](07-recommended-configs.md).
+

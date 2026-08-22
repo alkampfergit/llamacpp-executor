@@ -16,7 +16,7 @@
 #
 #  Examples:
 #    ./build-llamacpp.ps1
-#    ./build-llamacpp.ps1 -CMakeExtra '-DGGML_CUDA_FA_ALL_QUANTS=ON','-DLLAMA_SCHED_MAX_COPIES=1'
+#    ./build-llamacpp.ps1 -CMakeExtra '-DGGML_CUDA_FA_ALL_QUANTS=ON','-DGGML_SCHED_MAX_COPIES=1'
 #    ./build-llamacpp.ps1 -Targets llama-server -BuildDir build-fast
 # ===========================================================================
 [CmdletBinding()]
@@ -211,7 +211,12 @@ $sw = [Diagnostics.Stopwatch]::StartNew()
 $log = Join-Path $env:TEMP "llamacpp-build-$PID.log"
 & cmd /c "`"$bat`"" 2>&1 | Tee-Object -FilePath $log | ForEach-Object {
   # Keep the console readable: progress lines and real diagnostics only.
-  if ($_ -match '^\[\d+/\d+\]|^-- |error|Error|FAILED|fatal') { Write-Host $_ }
+  # 'CMake Warning' and 'not used by the project' are in this filter for a
+  # specific reason: a MISSPELLED -D option is only a WARNING. CMake prints
+  # "Manually-specified variables were not used by the project: X", compiles
+  # happily with the default, and exits 0. Without these patterns the build
+  # looks green while silently ignoring the flag you cared about.
+  if ($_ -match '^\[\d+/\d+\]|^-- |error|Error|FAILED|fatal|CMake Warning|not used by the project') { Write-Host $_ }
 }
 $code = $LASTEXITCODE
 $mins = [math]::Round($sw.Elapsed.TotalMinutes, 1)
@@ -225,6 +230,17 @@ if ($code -ne 0) {
   exit 1
 }
 Write-Host "`nBuild OK in $mins min. Log: $log" -ForegroundColor Green
+
+# A misspelled -D option does NOT fail the build. Surface it loudly, because
+# otherwise you wait out a long compile and get the default behaviour anyway.
+$unused = Select-String -Path $log -Pattern 'Manually-specified variables were not used' -Context 0,6
+if ($unused) {
+  Write-Host "`n!! CMAKE IGNORED ONE OR MORE -D OPTIONS !!" -ForegroundColor Red
+  Write-Host "The build succeeded, but these variables were not recognised, so their" -ForegroundColor Yellow
+  Write-Host "defaults were compiled in. Check the spelling and the correct PREFIX:" -ForegroundColor Yellow
+  Write-Host "ggml options are GGML_*, not LLAMA_* (e.g. GGML_SCHED_MAX_COPIES)." -ForegroundColor Yellow
+  $unused | ForEach-Object { $_.Line; $_.Context.PostContext } | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
+}
 
 # --- 6. smoke test -------------------------------------------------------
 # Ninja is single-config, so binaries are flat in build/bin -- no Release/.
@@ -266,3 +282,4 @@ Write-Host "by them. To compare, run BOTH and label which build produced which n
 Write-Host ""
 Write-Host "  new build : $bin\llama-server.exe" -ForegroundColor DarkGray
 Write-Host "  baseline  : $parentFull\llama-server.exe  (do not touch)" -ForegroundColor DarkGray
+

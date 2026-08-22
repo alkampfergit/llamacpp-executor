@@ -47,6 +47,7 @@ and come back later when you want to know *why* it looks like that.
 | 9 | [Speculative decoding & MTP](09-speculative-decoding.md) | Making generation faster without changing the model |
 | 10 | [Qwen3.8-27B results](10-results-qwen38-27b.md) | A **dense** model on the same box — where the MoE tuning advice does and does not transfer |
 | 11 | [Choosing the *file*](11-quant-selection-qwen38.md) | Which GGUF quant to download, and an audit of a third-party report: what survived measurement, what cost 27× the host buffer, and the one thing it got right that we never tested |
+| 12 | [Auditing a *build* report](12-build-flags-analysis.md) | Which `cmake` flags actually change the binary — and how `cuobjdump` settled in four seconds what a rebuild would have taken ninety minutes to answer. Half the flags in a third-party report are already the default; one of ours does not exist |
 
 ---
 

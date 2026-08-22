@@ -181,7 +181,7 @@ difference is that the report presents it as a flag you can pass, and it is actu
 
 ```powershell
 .\.claude\skills\building-llamacpp-cuda\scripts\build-llamacpp.ps1 `
-  -CMakeExtra '-DGGML_CUDA_FA_ALL_QUANTS=ON','-DLLAMA_SCHED_MAX_COPIES=1'
+  -CMakeExtra '-DGGML_CUDA_FA_ALL_QUANTS=ON','-DGGML_SCHED_MAX_COPIES=1'
 ```
 
 > **The lesson: check whether a configuration has a kernel before you check whether it has
@@ -496,3 +496,4 @@ What the report adds to the queue:
 
 Previous: [Chapter 10 — Qwen3.8-27B results](10-results-qwen38-27b.md) ·
 Back to [README](README.md).
+

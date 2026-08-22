@@ -553,7 +553,7 @@ Add `--jinja` if you need tool calling. It was **not** enabled for any measureme
 | Quality above 108k | Profile D offers 192k and nothing validates it. The haystack would need to be ~1.8x longer |
 | `-ub 1024` under drafting | Untested combination; `-ub` is free without drafting, but the draft graph reacts to it unpredictably |
 | Reasoning / code-edit gates for `q4_0` | The same gap chapter 6 left open, and profile B now depends on it |
-| Rebuild with `-DLLAMA_SCHED_MAX_COPIES=1` | Still the deterministic way to reach the lean path. Worth less here than on the MoE — it buys memory, not speed (§10.6) |
+| Rebuild with `-DGGML_SCHED_MAX_COPIES=1` | Still the deterministic way to reach the lean path. Worth less here than on the MoE — it buys memory, not speed (§10.6) |
 
 ---
 
@@ -643,3 +643,4 @@ the boundary, which is the point of recording it.
 
 Previous: [Chapter 9 — Speculative decoding](09-speculative-decoding.md) ·
 Back to [README](README.md).
+

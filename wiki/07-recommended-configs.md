@@ -202,7 +202,7 @@ call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Buil
 cd /d S:\OneDrive\Tools\llamacpp\llama.cpp
 cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON ^
       -DCMAKE_CUDA_ARCHITECTURES="86;120" ^
-      -DLLAMA_SCHED_MAX_COPIES=1 -DGGML_CUDA_FA_ALL_QUANTS=ON
+      -DGGML_SCHED_MAX_COPIES=1 -DGGML_CUDA_FA_ALL_QUANTS=ON
 cmake --build build -j
 ```
 
@@ -215,10 +215,10 @@ architectures from `nvidia-smi`, and smoke-tests the result:
 
 ```powershell
 .\.claude\skills\building-llamacpp-cuda\scripts\build-llamacpp.ps1 `
-  -CMakeExtra '-DLLAMA_SCHED_MAX_COPIES=1','-DGGML_CUDA_FA_ALL_QUANTS=ON'
+  -CMakeExtra '-DGGML_SCHED_MAX_COPIES=1','-DGGML_CUDA_FA_ALL_QUANTS=ON'
 ```
 
-- `LLAMA_SCHED_MAX_COPIES=1` makes the fast non-pipelined path **deterministic** rather than
+- `GGML_SCHED_MAX_COPIES=1` makes the fast non-pipelined path **deterministic** rather than
   a side effect of running out of memory. It should also free enough to run `q8_0` KV at
   `-ub 1024` at full 130k — Profile A's quality with Profile B's speed.
 - `GGML_CUDA_FA_ALL_QUANTS=ON` enables `-ctk q8_0 -ctv q4_0`: precise keys, compact values.
@@ -264,3 +264,4 @@ Finally, to confirm long-context quality on your own settings:
 ---
 
 Next: [Chapter 8 — Troubleshooting](08-troubleshooting.md).
+

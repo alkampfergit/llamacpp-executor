@@ -173,7 +173,7 @@ function Probe {
   if ($notes -contains 'NO-PIPELINE-FALLBACK') {
     Write-Host "   ^ fell back to non-pipelined execution: this is NOT the config you asked for." -ForegroundColor Yellow
     Write-Host "     If it is fast, that IS the fast path here. To make it deliberate rather" -ForegroundColor Yellow
-    Write-Host "     than accidental, rebuild with -DLLAMA_SCHED_MAX_COPIES=1 (compile-time;" -ForegroundColor Yellow
+    Write-Host "     than accidental, rebuild with -DGGML_SCHED_MAX_COPIES=1 (compile-time;" -ForegroundColor Yellow
     Write-Host "     the environment variable of that name does nothing)." -ForegroundColor Yellow
   }
   if ($notes -contains 'CPU-TENSORS') {
@@ -198,5 +198,6 @@ function Show-BenchResults {
 
 Write-Host "harness ready -- results: $Global:LCB_TSV" -ForegroundColor DarkGray
 Write-Host "Reminder: differences under ~8% are noise when a GPU also drives a display." -ForegroundColor DarkGray
+
 
 
