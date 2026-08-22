@@ -142,7 +142,7 @@ cards, and it runs. (The measured figure is higher than the arithmetic because
 | **Close GPU-using desktop apps** | up to ~1.5 GiB | **none** |
 | `-ctk q8_0 -ctv q8_0` instead of f16 | 1200 MiB | ~2% |
 | `-ctk q4_0 -ctv q4_0` instead of q8_0 | ~700 MiB | **negative — it's faster** (but see quality, §6.4) |
-| Rebuild `-DLLAMA_SCHED_MAX_COPIES=1` | several hundred MiB | **negative — it's faster** |
+| Rebuild `-DGGML_SCHED_MAX_COPIES=1` | several hundred MiB | **negative — it's faster** |
 | Reduce `-c` (e.g. 130048 → 126976) | 11 MiB per 1000 tokens | *gains* prefill speed (+26%) |
 | `-ub 512` → `256` | 819 MiB | −21% prefill |
 | `-ncmoe 2` | ~1000 MiB | **−69% prefill** ✗ |
@@ -252,3 +252,4 @@ Two failure signatures to recognise:
 ---
 
 Next: [Chapter 5 — Benchmarking honestly](05-benchmarking.md).
+

@@ -186,12 +186,39 @@ GPU, which is the binding constraint.
 Both remaining awkwardnesses — relying on an allocation failure for speed, and being unable
 to use asymmetric KV — are build-time limitations:
 
-```
-cmake -B build -DGGML_CUDA=ON -DLLAMA_SCHED_MAX_COPIES=1 -DGGML_CUDA_FA_ALL_QUANTS=ON
-cmake --build build --config Release -j
+> ⚠️ **The obvious command does not work on this machine.** An earlier version of this section
+> said to run `cmake -B build -DGGML_CUDA=ON ...`, which fails twice here before producing
+> anything: CMake defaults to a Visual Studio 2026 *preview* generator that crashes `nvcc`'s
+> `cudafe++`, and forcing the VS2022 generator then fails with `No CUDA toolset found` because
+> the CUDA installer registered its MSBuild integration only for the preview.
+
+The combination that actually works uses the **Ninja** generator inside a `vcvars64.bat`
+environment, with both GPU architectures named explicitly — `86` for the 3070 and **`120`**
+for the 5060 Ti (Blackwell, *not* `89`/Ada):
+
+```bat
+@echo off
+call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+cd /d S:\OneDrive\Tools\llamacpp\llama.cpp
+cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON ^
+      -DCMAKE_CUDA_ARCHITECTURES="86;120" ^
+      -DGGML_SCHED_MAX_COPIES=1 -DGGML_CUDA_FA_ALL_QUANTS=ON
+cmake --build build -j
 ```
 
-- `LLAMA_SCHED_MAX_COPIES=1` makes the fast non-pipelined path **deterministic** rather than
+Configure and build must be in the **same** script — environment variables from
+`vcvars64.bat` do not survive into a separate shell. Ninja is single-config, so binaries land
+flat in `build\bin\`, not `build\bin\Release\`. Requires `pip install ninja`.
+
+Easier: use the `building-llamacpp-cuda` skill, which detects the toolchain, derives the
+architectures from `nvidia-smi`, and smoke-tests the result:
+
+```powershell
+.\.claude\skills\building-llamacpp-cuda\scripts\build-llamacpp.ps1 `
+  -CMakeExtra '-DGGML_SCHED_MAX_COPIES=1','-DGGML_CUDA_FA_ALL_QUANTS=ON'
+```
+
+- `GGML_SCHED_MAX_COPIES=1` makes the fast non-pipelined path **deterministic** rather than
   a side effect of running out of memory. It should also free enough to run `q8_0` KV at
   `-ub 1024` at full 130k — Profile A's quality with Profile B's speed.
 - `GGML_CUDA_FA_ALL_QUANTS=ON` enables `-ctk q8_0 -ctv q4_0`: precise keys, compact values.
@@ -237,3 +264,4 @@ Finally, to confirm long-context quality on your own settings:
 ---
 
 Next: [Chapter 8 — Troubleshooting](08-troubleshooting.md).
+

@@ -39,20 +39,28 @@ install/
 *.onnx
 
 # ---------------------------------------------------------------------------
-#  Regenerable benchmark scratch.
+#  Benchmark artifacts.
 #
-#  KEPT ON PURPOSE (small, and it is the evidence behind the wiki's numbers):
+#  ALL COMMITTED ON PURPOSE -- this is the evidence behind every number in the
+#  wiki, and without it the tables are just assertions:
 #    wiki/benchmarks/results.tsv        every throughput run, append-only
-#    wiki/benchmarks/needle-results.md  quality-gate results
+#    wiki/benchmarks/needle-results.md  long-context quality-gate results
 #    wiki/benchmarks/mtp-results.md     speculative-decoding results
-#    wiki/benchmarks/logs/*.txt         per-run llama.cpp output (~152 KB)
+#    wiki/benchmarks/logs/              per-run llama.cpp output
+#    wiki/benchmarks/needle-prompt.txt  the 404 KB synthetic haystack (INPUT)
 #
-#  IGNORED: the ~400 KB synthetic haystack (needle-test.ps1 rebuilds it on
-#  demand) and server logs, which grow without bound while a server runs.
+#  The haystack is committed even though needle-test.ps1 regenerates it
+#  deterministically (verified: identical SHA256). Two reasons it must be the
+#  committed artifact rather than a regenerated one:
+#    1. Line-ending normalisation would silently change the token count, so
+#       "107,732 tokens" would stop reproducing. See .gitattributes.
+#    2. Every configuration must be compared against a byte-identical prompt;
+#       committing it removes any doubt that they were.
+#
+#  Only genuinely unbounded output is ignored: the background server log grows
+#  for as long as a server runs.
 # ---------------------------------------------------------------------------
-wiki/benchmarks/needle-prompt.txt
 wiki/benchmarks/server.log
-wiki/benchmarks/logs/server_*.log
 bench-results/
 
 # ---------------------------------------------------------------------------

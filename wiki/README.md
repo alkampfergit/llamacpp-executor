@@ -45,6 +45,10 @@ and come back later when you want to know *why* it looks like that.
 | 7 | [Recommended configurations](07-recommended-configs.md) | Copy-paste launch commands for each goal |
 | 8 | [Troubleshooting](08-troubleshooting.md) | Slow prefill, silent OOM, gibberish output, and the Windows driver trap that ruins everything |
 | 9 | [Speculative decoding & MTP](09-speculative-decoding.md) | Making generation faster without changing the model |
+| 10 | [Qwen3.8-27B results](10-results-qwen38-27b.md) | A **dense** model on the same box — where the MoE tuning advice does and does not transfer |
+| 11 | [Choosing the *file*](11-quant-selection-qwen38.md) | Which GGUF quant to download, and an audit of a third-party report: what survived measurement, what cost 27× the host buffer, and the one thing it got right that we never tested |
+| 12 | [Auditing a *build* report](12-build-flags-analysis.md) | Which `cmake` flags actually change the binary — and how `cuobjdump` settled in four seconds what a rebuild would have taken ninety minutes to answer. Half the flags in a third-party report are already the default; one of ours does not exist |
+| 13 | [The speculative-decoding landscape](13-speculative-decoding-landscape.md) | **DFlash2, DSpark and PFlash.** What `--spec-type` really does with a list (a priority cascade, not a sum), why an n-gram outranks your MTP head, why DFlash2 cannot fit at 130k here, and the one thing that beats every speedup in this wiki: **a speedup that competes with your prompt cache looks identical to one that composes with it — until the second request** |
 
 ---
 
@@ -115,3 +119,4 @@ Both live under `S:\HuggingFace\lmstudio\`:
 Both are `qwen35moe`: 35.5 B total parameters, ~3 B active per token, 256 experts with 8
 used per token, and a **hybrid attention design** that makes long context unusually cheap.
 Chapter 4 explains why that last point is the reason 130k context is possible at all.
+

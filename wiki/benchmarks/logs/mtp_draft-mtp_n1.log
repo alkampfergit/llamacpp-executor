@@ -1,31 +1,35 @@
-[34m0.00.106.378[0m [32mI [0mcmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
-[34m0.00.237.453[0m [35mW srv  llama_server: -----------------
-[0m[34m0.00.237.459[0m [35mW srv  llama_server: CORS is set to allow all origins ('*') and no API key is set
-[0m[34m0.00.237.460[0m [35mW srv  llama_server: this can be a security risk (cross-origin attacks)
-[0m[34m0.00.237.460[0m [35mW srv  llama_server: more info: https://github.com/ggml-org/llama.cpp/pull/25655
-[0m[34m0.00.237.461[0m [35mW srv  llama_server: -----------------
-[0m[34m0.00.246.457[0m [32mI [0msrv    load_model: loading model 'S:\HuggingFace\lmstudio\Jackrong\Qwopus3.6-35B-A3B-Coder-MTP-GGUF\Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf'
-[34m0.10.088.839[0m [32mI [0mcmn          init: llama threadpool init, n_threads = 12
-[34m0.10.088.914[0m [32mI [0mcommon_speculative_init_result: creating MTP draft context against the target model 'S:\HuggingFace\lmstudio\Jackrong\Qwopus3.6-35B-A3B-Coder-MTP-GGUF\Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf'
-[34m0.10.594.387[0m [32mI [0msrv    load_model: initializing, n_slots = 1, n_ctx_slot = 65536, kv_unified = 'false'
-[34m0.10.723.917[0m [32mI [0msrv          init: chat template supports preserving reasoning, consider enabling it via --reasoning-preserve
-[34m0.10.723.938[0m [32mI [0msrv  llama_server: model loaded
-[34m0.10.723.941[0m [32mI [0msrv  llama_server: listening on http://127.0.0.1:9078
-[34m0.12.008.796[0m [32mI [0mslot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = -1
-[34m0.12.008.855[0m [32mI [0mslot launch_slot_: id  0 | task 0 | processing task, is_child = 0
-[34m0.15.970.365[0m [32mI [0mslot print_timing: id  0 | task 0 | n_gen =    280, tg =  92.61 t/s, tg_3s =  92.94 t/s
-[34m0.16.190.232[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt eval time =     948.78 ms /    57 tokens (   16.65 ms per token,    60.08 tokens per second)
-[34m0.16.190.239[0m [32mI [0mslot print_timing: id  0 | task 0 |        eval time =    3232.58 ms /   300 tokens (   10.81 ms per token,    92.50 tokens per second)
-[34m0.16.190.240[0m [32mI [0mslot print_timing: id  0 | task 0 |       total time =    4181.36 ms /   357 tokens
-[34m0.16.190.241[0m [32mI [0mslot print_timing: id  0 | task 0 |    graphs reused =        162
-[34m0.16.190.244[0m [32mI [0mslot print_timing: id  0 | task 0 | draft acceptance = 0.81707 (  134 accepted /   164 generated), mean len =  1.82
-[34m0.16.190.293[0m [32mI [0mslot      release: id  0 | task 0 | stop processing: n_tokens = 356, truncated = 0
-[34m0.16.193.708[0m [32mI [0mslot get_availabl: id  0 | task -1 | selected slot by LCP similarity, f_sim_best = 1.000 (> 0.100 thold), f_keep = 0.160
-[34m0.16.239.331[0m [32mI [0mslot launch_slot_: id  0 | task 168 | processing task, is_child = 0
-[34m0.19.323.567[0m [32mI [0mslot print_timing: id  0 | task 168 | n_gen =    272, tg =  90.20 t/s, tg_3s =  90.53 t/s
-[34m0.19.639.500[0m [32mI [0mslot print_timing: id  0 | task 168 | prompt eval time =      79.72 ms /     4 tokens (   19.93 ms per token,    50.18 tokens per second)
-[34m0.19.639.507[0m [32mI [0mslot print_timing: id  0 | task 168 |        eval time =    3320.35 ms /   300 tokens (   11.10 ms per token,    90.05 tokens per second)
-[34m0.19.639.508[0m [32mI [0mslot print_timing: id  0 | task 168 |       total time =    3400.07 ms /   304 tokens
-[34m0.19.639.509[0m [32mI [0mslot print_timing: id  0 | task 168 |    graphs reused =        319
-[34m0.19.639.512[0m [32mI [0mslot print_timing: id  0 | task 168 | draft acceptance = 0.88050 (  140 accepted /   159 generated), mean len =  1.88
-[34m0.19.639.564[0m [32mI [0mslot      release: id  0 | task 168 | stop processing: n_tokens = 356, truncated = 0
+[34m0.00.108.523[0m [32mI [0mcmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+[34m0.00.244.451[0m [35mW srv  llama_server: -----------------
+[0m[34m0.00.244.461[0m [35mW srv  llama_server: CORS is set to allow all origins ('*') and no API key is set
+[0m[34m0.00.244.461[0m [35mW srv  llama_server: this can be a security risk (cross-origin attacks)
+[0m[34m0.00.244.462[0m [35mW srv  llama_server: more info: https://github.com/ggml-org/llama.cpp/pull/25655
+[0m[34m0.00.244.462[0m [35mW srv  llama_server: -----------------
+[0m[34m0.00.250.311[0m [32mI [0msrv    load_model: loading model 'S:\HuggingFace\lmstudio\lmstudio-community\Qwen3.8-27B-GGUF\Qwen3.8-27B-Q4_K_M.gguf'
+[34m0.08.081.033[0m [32mI [0mcmn          init: llama threadpool init, n_threads = 12
+[34m0.08.081.178[0m [32mI [0mcommon_speculative_init_result: creating MTP draft context against the target model 'S:\HuggingFace\lmstudio\lmstudio-community\Qwen3.8-27B-GGUF\Qwen3.8-27B-Q4_K_M.gguf'
+[34m0.08.646.719[0m [32mI [0msrv    load_model: initializing, n_slots = 1, n_ctx_slot = 65536, kv_unified = 'false'
+[34m0.08.805.500[0m [32mI [0msrv          init: chat template supports preserving reasoning, consider enabling it via --reasoning-preserve
+[34m0.08.805.520[0m [32mI [0msrv  llama_server: model loaded
+[34m0.08.805.523[0m [32mI [0msrv  llama_server: listening on http://127.0.0.1:9078
+[34m0.10.022.419[0m [32mI [0mslot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = -1
+[34m0.10.022.472[0m [32mI [0mslot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+[34m0.13.525.729[0m [32mI [0mslot print_timing: id  0 | task 0 | n_gen =    111, tg =  36.17 t/s, tg_3s =  36.49 t/s
+[34m0.16.555.246[0m [32mI [0mslot print_timing: id  0 | task 0 | n_gen =    218, tg =  35.74 t/s, tg_3s =  35.32 t/s
+[34m0.19.601.762[0m [32mI [0mslot print_timing: id  0 | task 0 | n_gen =    328, tg =  35.86 t/s, tg_3s =  36.11 t/s
+[34m0.21.565.177[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt eval time =     461.58 ms /    57 tokens (    8.10 ms per token,   123.49 tokens per second)
+[34m0.21.565.184[0m [32mI [0mslot print_timing: id  0 | task 0 |        eval time =   11081.11 ms /   400 tokens (   27.77 ms per token,    36.01 tokens per second)
+[34m0.21.565.185[0m [32mI [0mslot print_timing: id  0 | task 0 |       total time =   11542.69 ms /   457 tokens
+[34m0.21.565.186[0m [32mI [0mslot print_timing: id  0 | task 0 |    graphs reused =        204
+[34m0.21.565.189[0m [32mI [0mslot print_timing: id  0 | task 0 | draft acceptance = 0.93204 (  192 accepted /   206 generated), mean len =  1.93
+[34m0.21.565.232[0m [32mI [0mslot      release: id  0 | task 0 | stop processing: n_tokens = 456, truncated = 0
+[34m0.21.568.404[0m [32mI [0mslot get_availabl: id  0 | task -1 | selected slot by LCP similarity, f_sim_best = 1.000 (> 0.100 thold), f_keep = 0.125
+[34m0.21.686.154[0m [32mI [0mslot launch_slot_: id  0 | task 210 | processing task, is_child = 0
+[34m0.24.910.595[0m [32mI [0mslot print_timing: id  0 | task 210 | n_gen =    106, tg =  34.44 t/s, tg_3s =  34.77 t/s
+[34m0.27.961.965[0m [32mI [0mslot print_timing: id  0 | task 210 | n_gen =    210, tg =  34.26 t/s, tg_3s =  34.08 t/s
+[34m0.30.988.244[0m [32mI [0mslot print_timing: id  0 | task 210 | n_gen =    322, tg =  35.17 t/s, tg_3s =  37.01 t/s
+[34m0.33.207.214[0m [32mI [0mslot print_timing: id  0 | task 210 | prompt eval time =     175.88 ms /     4 tokens (   43.97 ms per token,    22.74 tokens per second)
+[34m0.33.207.222[0m [32mI [0mslot print_timing: id  0 | task 210 |        eval time =   11345.07 ms /   400 tokens (   28.43 ms per token,    35.17 tokens per second)
+[34m0.33.207.223[0m [32mI [0mslot print_timing: id  0 | task 210 |       total time =   11520.94 ms /   404 tokens
+[34m0.33.207.223[0m [32mI [0mslot print_timing: id  0 | task 210 |    graphs reused =        413
+[34m0.33.207.226[0m [32mI [0mslot print_timing: id  0 | task 210 | draft acceptance = 0.89100 (  188 accepted /   211 generated), mean len =  1.89
+[34m0.33.207.259[0m [32mI [0mslot      release: id  0 | task 210 | stop processing: n_tokens = 456, truncated = 0

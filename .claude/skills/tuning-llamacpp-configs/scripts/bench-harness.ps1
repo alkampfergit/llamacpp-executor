@@ -150,6 +150,10 @@ function Probe {
     if     ($l -match 'retrying without pipeline')       { $notes += 'NO-PIPELINE-FALLBACK' }
     if     ($l -match 'overrides to CPU')                { $notes += 'CPU-TENSORS' }
   }
+  # A run that produced a result row SUCCEEDED, even if an allocation failed
+  # earlier and llama.cpp retried without pipeline parallelism. Labelling those
+  # OOM makes consumers discard valid data -- caught by an external review.
+  if ($pp -ne '' -and $status -eq 'OOM') { $status = 'OK'; $notes += 'RECOVERED-AFTER-OOM' }
   if ($pp -eq '' -and $status -eq 'OK') { $status = 'FAIL' }
 
   $p0 = if ($peak.ContainsKey(0)) { $peak[0] } else { 0 }
@@ -169,7 +173,7 @@ function Probe {
   if ($notes -contains 'NO-PIPELINE-FALLBACK') {
     Write-Host "   ^ fell back to non-pipelined execution: this is NOT the config you asked for." -ForegroundColor Yellow
     Write-Host "     If it is fast, that IS the fast path here. To make it deliberate rather" -ForegroundColor Yellow
-    Write-Host "     than accidental, rebuild with -DLLAMA_SCHED_MAX_COPIES=1 (compile-time;" -ForegroundColor Yellow
+    Write-Host "     than accidental, rebuild with -DGGML_SCHED_MAX_COPIES=1 (compile-time;" -ForegroundColor Yellow
     Write-Host "     the environment variable of that name does nothing)." -ForegroundColor Yellow
   }
   if ($notes -contains 'CPU-TENSORS') {
@@ -194,4 +198,6 @@ function Show-BenchResults {
 
 Write-Host "harness ready -- results: $Global:LCB_TSV" -ForegroundColor DarkGray
 Write-Host "Reminder: differences under ~8% are noise when a GPU also drives a display." -ForegroundColor DarkGray
+
+
 

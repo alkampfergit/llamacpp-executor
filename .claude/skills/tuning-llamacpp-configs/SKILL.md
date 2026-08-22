@@ -61,6 +61,27 @@ Tell the user to set:
 Until this is set, **every measurement is suspect**, because a slow result is
 indistinguishable from an overflowing one. Say so plainly rather than tuning around it.
 
+> ### ⚠️ The policy is per-EXECUTABLE-PATH, so "it's set" is not enough
+> Setting it for `llama-server.exe` does **nothing** for `llama-batched-bench.exe`, which is the
+> binary that produces almost all throughput numbers. Measured proof: a policy set two hours
+> before a campaign, and every run in that campaign still spilled silently — prefill sliding
+> 1219 → 943 → 790 t/s as free VRAM shrank, with the driver never refusing an allocation.
+>
+> **Verify per binary, don't assume.** Ask for slightly too much and check that it now *fails*:
+> a clean `cudaMalloc failed: out of memory` means covered; ~800–950 t/s with no error in the
+> log means still spilling. Global Settings covers everything, including future build paths.
+>
+> A freshly compiled binary is a **new path** and starts uncovered.
+
+**If you are measuring a self-compiled build**, two more preconditions:
+
+- **Run it from its own `bin/`.** ggml resolves backend DLLs relative to the working directory,
+  so a new binary launched elsewhere can load backends belonging to a *different* build. Seen
+  for real: a fresh build pulled `ggml-cpu-haswell.dll` out of the baseline folder because its
+  own file is named `ggml-cpu.dll`.
+- **Label every number with the build that produced it**, and compare a rebuild against a
+  CONTROL rebuild rather than against shipped binaries, which differ in source and compiler too.
+
 Then note what is holding VRAM:
 
 ```powershell
@@ -90,7 +111,7 @@ Measure it in step 3 instead.
 Use it to build the memory model and to eliminate candidates.
 
 ```powershell
-./scripts/vram-budget.ps1 -Model <model.gguf>
+./.claude/skills/tuning-llamacpp-configs/scripts/vram-budget.ps1 -Model <model.gguf>
 ```
 
 That script discovers per-GPU free VRAM, sweeps `-c` × `-ub`, and prints which
@@ -124,7 +145,7 @@ Constrain hard before spending GPU time:
 ### 5. Measure at the real context size
 
 ```powershell
-. ./scripts/bench-harness.ps1
+. ./.claude/skills/tuning-llamacpp-configs/scripts/bench-harness.ps1
 Probe "ub512 ts12,29" @('-ub','512','-ts','12,29','-ctk','q8_0','-ctv','q8_0',
                         '-fa','on','-ngl','999','-fit','off') -Ctx 130048 -Npp '8192'
 ```
@@ -184,8 +205,8 @@ started losing the middle of long documents. Never adopt a lossy KV setting on s
 alone.
 
 ```powershell
-./scripts/needle-test.ps1 -Model <model.gguf> -Label q8 -Ctk q8_0 -Ctv q8_0 -Ub 512
-./scripts/needle-test.ps1 -Model <model.gguf> -Label q4 -Ctk q4_0 -Ctv q4_0 -Ub 1024
+./.claude/skills/tuning-llamacpp-configs/scripts/needle-test.ps1 -Model <model.gguf> -Label q8 -Ctk q8_0 -Ctv q8_0 -Ub 512
+./.claude/skills/tuning-llamacpp-configs/scripts/needle-test.ps1 -Model <model.gguf> -Label q4 -Ctk q4_0 -Ctv q4_0 -Ub 1024
 ```
 
 It hides one unguessable fact at the *start* of a ~108k-token monotonous document and asks
@@ -205,7 +226,30 @@ When the user cares about quality, offer the pair — a `q8_0` profile and a `q4
 with the measured speed difference stated, and let them choose. Often the best answer is
 **`q8_0` with slightly less context**, which can beat `q4_0` at full context on both axes.
 
-### 9. Deliver
+### 9. Decide on speculative decoding — by measurement, never by assumption
+
+Only ever evaluate it **after** the placement/memory work above, because it competes for the
+same VRAM. It cannot be measured with either bench tool (neither supports `--spec-type`), so
+it needs `llama-server` over HTTP with a **generation-heavy** request — short prompt, long
+output — since it never accelerates prefill.
+
+```powershell
+./.claude/skills/tuning-llamacpp-configs/scripts/mtp-test.ps1 -Model <model.gguf>       # baseline, then draft-mtp n-max 1..6
+```
+
+Judge it on **end-to-end tokens/second versus a no-drafting baseline on the same prompt.**
+Draft acceptance is not the metric — 67–72% acceptance still lost 29% on a sparse MoE
+(see trap 6). Rough priors:
+
+- **Large dense model** → likely a win; the expensive per-token pass amortises the draft.
+- **Sparse MoE, few active params** → likely a loss; measure before enabling.
+- **`ngram-*`** → 0 VRAM, ~0 risk. Test on *edit-style* work, where output copies input.
+
+Also check the model even has a draft head: `n_layer_all > n_layer` and
+`nextn_predict_layers` in the metadata. Activating it loads that layer and costs real VRAM
+(~530 MiB on the reference model), which a tight configuration may not have.
+
+### 10. Deliver
 
 Emit a single copy-paste launch command, grouped by intent, plus the measured PP/TG and
 peak VRAM, plus what was given up. State explicitly which numbers are measured and which
@@ -225,7 +269,7 @@ judgement this skill encodes — the bottom two look attractive and are traps.
 | 3 | `q4_0/q4_0` instead of `q8_0/q8_0` (symmetric — still fast) | **negative — it is faster**, but **quality-gate it** |
 | 4 | Reduce `-c` a little (e.g. −2%) | **negative — prefill speeds up** |
 | 5 | `-ub` down one step | ~−20 to −30% prefill |
-| 6 | Rebuild `-DLLAMA_SCHED_MAX_COPIES=1` | **negative — it is faster** |
+| 6 | Rebuild `-DGGML_SCHED_MAX_COPIES=1` | **negative — it is faster** |
 | 7 | `-ncmoe N` (experts to CPU) | **~−69% prefill for 2 of 40 layers** |
 
 Steps 3, 4 and 6 are counter-intuitive and are usually the answer:
@@ -239,7 +283,7 @@ Steps 3, 4 and 6 are counter-intuitive and are usually the answer:
   card, and its 4 activation copies are often exactly what breaks the fit. But note:
   `GGML_SCHED_MAX_COPIES` is a **compile-time** define, **not** an environment variable.
   Setting `$env:GGML_SCHED_MAX_COPIES` does nothing. Either rebuild with
-  `-DLLAMA_SCHED_MAX_COPIES=1`, or raise `-ub` until the pipelined reserve fails and
+  `-DGGML_SCHED_MAX_COPIES=1`, or raise `-ub` until the pipelined reserve fails and
   llama.cpp falls back to the lean path on its own (see traps).
 
 ---
@@ -247,8 +291,28 @@ Steps 3, 4 and 6 are counter-intuitive and are usually the answer:
 ## Standing cautions
 
 - **`GGML_SCHED_MAX_COPIES` is not a runtime environment variable.** It is a compile-time
-  `#define` (default 4). Never tell the user to `$env:`-set it, and never credit a
-  measurement to it. To control it: `cmake -B build -DGGML_CUDA=ON -DLLAMA_SCHED_MAX_COPIES=1`.
+  `#define` (default 4). Never tell the user to `$env:`-set it, and never credit a measurement
+  to it. Changing it requires rebuilding — and on Windows the plain
+  `cmake -B build -DGGML_CUDA=ON …` from llama.cpp's docs may not work. **Use the
+  `building-llamacpp-cuda` skill** rather than improvising build commands.
+- **Establish the model's class before predicting anything.** Dense vs sparse-MoE, and how many
+  layers are genuinely full-attention, decide *which knobs matter at all*. Measured on the same
+  box: a sparse 35B-A3B and a dense 27B disagreed on five of six effects, and two flipped sign.
+  Never carry a number — or a *shape* — from one model to another. See
+  `references/parameter-effects.md`.
+- **Speculative decoding must be justified per model, never assumed.** On a sparse MoE it was a
+  **net loss** (−7% at `n-max 1`, −29% at `n-max 2`) *despite 67–72% acceptance*; on a dense 27 B
+  it was **+110%** (22.4 → 47.1 t/s at `n-max 4`). Each drafted token costs roughly a full
+  forward pass, so it pays only when that pass is expensive. **High acceptance is not a win;
+  only end-to-end tokens/second is.** Also note it *costs* prefill (−27% measured) and a second
+  graph reservation (~1.1 GiB), and its gain shrinks with depth (2.0× shallow → ~1.5× at 108k).
+- **Never hardcode a layer index when checking whether the MTP head loaded.** It sits at
+  `blk.<n_layer>` — `blk.40` on one model, `blk.64` on another. Match
+  `unused tensor blk\.\d+\.nextn` instead; a hardcoded index silently reports "loaded" for every
+  run including the baseline.
+- **Commit benchmark inputs, don't just regenerate them.** A fixed long-context prompt must be
+  byte-identical across configurations and machines; line-ending normalisation alone changes
+  its token count. Store the artifact and mark it `-text` in `.gitattributes`.
 - **Verify whether a knob is runtime or compile-time before believing a result you attribute
   to it.** A gain smaller than the machine's noise floor is not evidence of anything.
 - `-mg` does nothing with `-sm layer`. Delete it if you see it.
@@ -287,3 +351,8 @@ Load only what the current question needs.
 
 Requires: llama.cpp CUDA build with `llama-fit-params.exe`, `llama-batched-bench.exe` and
 `llama-server.exe`; `nvidia-smi` on PATH; PowerShell 7+.
+
+
+
+
+

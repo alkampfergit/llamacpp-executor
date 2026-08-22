@@ -1,0 +1,24 @@
+0.00.673.841 W model has unused tensor blk.64.attn_norm.weight (size = 20480 bytes) -- ignoring
+0.00.673.858 W model has unused tensor blk.64.post_attention_norm.weight (size = 20480 bytes) -- ignoring
+0.00.673.881 W model has unused tensor blk.64.attn_q.weight (size = 35389440 bytes) -- ignoring
+0.00.673.889 W model has unused tensor blk.64.attn_k.weight (size = 2949120 bytes) -- ignoring
+0.00.673.896 W model has unused tensor blk.64.attn_v.weight (size = 4300800 bytes) -- ignoring
+0.00.673.925 W model has unused tensor blk.64.attn_output.weight (size = 17694720 bytes) -- ignoring
+0.00.673.936 W model has unused tensor blk.64.attn_q_norm.weight (size = 1024 bytes) -- ignoring
+0.00.673.944 W model has unused tensor blk.64.attn_k_norm.weight (size = 1024 bytes) -- ignoring
+0.00.673.952 W model has unused tensor blk.64.ffn_gate.weight (size = 50135040 bytes) -- ignoring
+0.00.673.962 W model has unused tensor blk.64.ffn_down.weight (size = 73113600 bytes) -- ignoring
+0.00.673.970 W model has unused tensor blk.64.ffn_up.weight (size = 50135040 bytes) -- ignoring
+0.00.673.983 W model has unused tensor blk.64.nextn.eh_proj.weight (size = 29491200 bytes) -- ignoring
+0.00.673.992 W model has unused tensor blk.64.nextn.enorm.weight (size = 20480 bytes) -- ignoring
+0.00.674.000 W model has unused tensor blk.64.nextn.hnorm.weight (size = 20480 bytes) -- ignoring
+0.00.674.028 W model has unused tensor blk.64.nextn.shared_head_norm.weight (size = 20480 bytes) -- ignoring
+0.07.853.518 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 823.09 MiB on device 0: cudaMalloc failed: out of memory
+0.07.853.527 E ggml_gallocr_reserve_n_impl: failed to allocate CUDA0 buffer of size 863076864
+0.07.853.528 E graph_reserve: failed to allocate compute buffers
+0.07.853.542 W sched_reserve: compute buffer allocation failed, retrying without pipeline parallelism
+0.07.888.988 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 611.77 MiB on device 0: cudaMalloc failed: out of memory
+0.07.888.995 E ggml_gallocr_reserve_n_impl: failed to allocate CUDA0 buffer of size 641491072
+0.07.888.996 E graph_reserve: failed to allocate compute buffers
+0.07.914.935 E llama_init_from_model: failed to initialize the context: failed to allocate compute pp buffers
+llama_batched_bench: error: failed to create the llama_context

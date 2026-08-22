@@ -66,9 +66,14 @@ function Measure-Spec {
     return $null
   }
 
-  # Did the MTP head actually load? If blk.40 is still "unused ... ignoring",
-  # the draft head is NOT active and any speedup is imaginary.
-  $mtpIgnored = (Select-String -Path $slog -Pattern 'unused tensor blk\.40' -Quiet)
+  # Did the MTP head actually load? If its tensors are still "unused ...
+  # ignoring", the draft head is NOT active and any speedup is imaginary.
+  #
+  # Match the nextn tensors, NOT a hardcoded block index. The MTP layer sits at
+  # blk.<n_layer>, which differs per model -- blk.40 on the 35B-A3B MoE but
+  # blk.64 on Qwen3.8-27B. An earlier version grepped 'blk\.40' and therefore
+  # reported "MTP loaded = True" for every 27B run, including the baseline.
+  $mtpIgnored = (Select-String -Path $slog -Pattern 'unused tensor blk\.\d+\.nextn' -Quiet)
 
   $body = @{ messages = @(@{role='user'; content=$PROMPT})
              max_tokens = $Predict; temperature = 0.6; top_p = 0.95

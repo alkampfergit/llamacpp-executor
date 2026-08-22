@@ -118,7 +118,7 @@ Check, in order:
 5. **Pipeline parallelism hurting you?** On mismatched GPUs the pipelined path is often
    slower than the fallback. Note that `GGML_SCHED_MAX_COPIES` is a **compile-time** define —
    setting it as an environment variable does nothing. Rebuild with
-   `-DLLAMA_SCHED_MAX_COPIES=1`, or reach the lean path by raising `-ub` until the pipelined
+   `-DGGML_SCHED_MAX_COPIES=1`, or reach the lean path by raising `-ub` until the pipelined
    reserve fails (§6.2).
 
 ---
@@ -133,7 +133,7 @@ Honest OOM. Reduce in this order (cheapest first):
 2. `-ctk q8_0 -ctv q8_0` if you were on f16 (or `q4_0/q4_0` if quality allows — §6.4).
 3. Reduce `-c` a little. 130048 → 126976 costs 2.4% of the window and *gains* 26% prefill.
 4. `-ub 512` → `256`.
-5. Rebuild with `-DLLAMA_SCHED_MAX_COPIES=1` for a permanently smaller footprint.
+5. Rebuild with `-DGGML_SCHED_MAX_COPIES=1` for a permanently smaller footprint.
 6. Only then, `-ncmoe`.
 
 ### `CUDA error: the resource allocation failed` … `cublasCreate_v2`
@@ -149,7 +149,7 @@ above. Seen on this machine at `-ub 384`, where `-ub 256` worked fine.
 ### `failed to allocate compute pp buffers`
 
 Compute buffers didn't fit. Lower `-ub`, reduce `-c`, or rebuild with
-`-DLLAMA_SCHED_MAX_COPIES=1`.
+`-DGGML_SCHED_MAX_COPIES=1`.
 
 ### `failed to fit params to free device memory: n_gpu_layers already set by user to 999, abort`
 
@@ -161,7 +161,7 @@ Compute buffers didn't fit. Lower `-ub`, reduce `-c`, or rebuild with
 **A warning, and often good news.** llama.cpp fell back to non-pipelined execution, which on
 mismatched GPUs is *faster* — 2650 vs 1850 t/s here (§6.2). Profiles B in chapter 7 depend on
 this happening. To stop depending on an allocation failure, rebuild with
-`-DLLAMA_SCHED_MAX_COPIES=1`; setting the environment variable does **not** work.
+`-DGGML_SCHED_MAX_COPIES=1`; setting the environment variable does **not** work.
 
 ### `model has unused tensor blk.40.… -- ignoring`
 
@@ -260,3 +260,4 @@ curl.exe http://localhost:9010/tokenize -H "Content-Type: application/json" -d '
 ---
 
 Next: [Chapter 9 — Speculative decoding & MTP](09-speculative-decoding.md).
+
