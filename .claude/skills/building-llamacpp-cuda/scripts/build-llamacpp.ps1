@@ -400,7 +400,7 @@ if (-not (Test-Path $bin)) { Fail "No $bin directory. (Note: Ninja does NOT crea
 Get-ChildItem $bin -Filter *.exe | Select-Object Name,
   @{n='KB';e={[math]::Round($_.Length/1KB)}} | Format-Table -AutoSize | Out-String | Write-Host
 
-$probe = Join-Path $bin 'llama-bench.exe'
+$probe = Join-Path $bin 'llama-server.exe'   # llama-bench has NO --version flag
 if (-not (Test-Path $probe)) { $probe = (Get-ChildItem $bin -Filter *.exe | Select-Object -First 1).FullName }
 if ($probe -and (Test-Path $probe)) {
   # The silent-exit trap: CUDA 13.x puts its runtime DLLs in bin\x64, but only
@@ -419,18 +419,51 @@ if ($probe -and (Test-Path $probe)) {
     Write-Host "Adding CUDA runtime dir to PATH for this test: $cudaX64" -ForegroundColor DarkGray
     $env:PATH = "$cudaX64;$env:PATH"
   }
-  $out = & $probe --version 2>&1 | ForEach-Object { [string]$_ }
+  # Run FROM the binary's own directory. ggml discovers backend DLLs relative to
+  # the working directory, so probing from elsewhere makes the new binary load
+  # backends belonging to a DIFFERENT build. Observed for real: a fresh build
+  # loaded ggml-rpc.dll and ggml-cpu-haswell.dll out of the baseline folder,
+  # because the filenames differ from this build's ggml-cpu.dll. A benchmark run
+  # that way would silently mix two builds and be worthless.
+  # TWO probes, because they answer different questions:
+  #   --version       prints build number + commit, but EXITS BEFORE backends
+  #                   initialise, so it never lists devices.
+  #   --list-devices  loads the backends and enumerates GPUs, which is what
+  #                   actually proves CUDA works and reveals where each backend
+  #                   DLL was resolved from.
+  # Using only --version produced a bogus "built with CUDA but no devices"
+  # warning on a perfectly good build.
+  Push-Location $bin
+  try {
+    $ver  = & $probe --version 2>&1 | ForEach-Object { [string]$_ }
+    $devs = & $probe --list-devices 2>&1 | ForEach-Object { [string]$_ }
+  } finally { Pop-Location }
+  $out = @($ver) + @($devs)
+
   if (-not $out) {
     Write-Host "SMOKE TEST FAILED: no output at all." -ForegroundColor Red
     Write-Host "That is the missing-CUDA-runtime-DLL signature, not a build error." -ForegroundColor Yellow
     Write-Host "Put the CUDA bin\x64 directory on PATH, or copy cudart64_*/cublas*64_* next to the exe." -ForegroundColor Yellow
   } else {
-    $out | Select-Object -First 8 | Write-Host
-    $devs = ($out | Select-String 'Device \d+:' | Measure-Object).Count
-    if ($devs -gt 0) { Write-Host "OK: $devs CUDA device(s) visible to the new build." -ForegroundColor Green }
+    $ver | Where-Object { $_ -match 'version:|built with' } | ForEach-Object { Write-Host "  $_" }
+    $nDev = ($out | Select-String 'Device \d+:|CUDA\d' | Measure-Object).Count
+    if ($nDev -gt 0) { Write-Host "OK: $nDev CUDA device line(s) visible to the new build." -ForegroundColor Green }
     elseif (-not $CpuOnly) { Write-Host "WARNING: built with CUDA but no devices listed." -ForegroundColor Yellow }
+    # Any backend resolved from outside this build dir means the test -- and any
+    # benchmark run the same way -- is not measuring this build.
+    $foreign = $out | Select-String 'load_backend' | Where-Object { $_.Line -notmatch [regex]::Escape($bin) }
+    if ($foreign) {
+      Write-Host "WARNING: backends loaded from OUTSIDE this build directory:" -ForegroundColor Yellow
+      $foreign | ForEach-Object { Write-Host "  $($_.Line.Trim())" -ForegroundColor Yellow }
+      Write-Host "Always run these binaries with their own bin\ as the working directory." -ForegroundColor Yellow
+    }
   }
 }
+
+# The smoke test is diagnostic only. Do not let a probe's exit code mark a
+# successful build as failed -- an invalid --version flag did exactly that.
+$global:LASTEXITCODE = 0
+$Error.Clear()
 
 Write-Host "`nBinaries: $bin" -ForegroundColor Green
 Write-Host "RUN THEM FROM HERE. Do not copy them over the baseline binaries beside the" -ForegroundColor Yellow
@@ -439,5 +472,9 @@ Write-Host "by them. To compare, run BOTH and label which build produced which n
 Write-Host ""
 Write-Host "  new build : $bin\llama-server.exe" -ForegroundColor DarkGray
 Write-Host "  baseline  : $parentFull\llama-server.exe  (do not touch)" -ForegroundColor DarkGray
+
+
+
+
 
 

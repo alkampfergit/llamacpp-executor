@@ -20,7 +20,7 @@ param(
   [string]   $Ctv    = 'q4_0',
   [string]   $Split  = '12,29',
   [int]      $Port   = 9078,
-  [int[]]    $NMax   = @(1,2,3,4,6),
+  [int[]]    $NMax   = @(1,2,3,4,5,6),
   [string[]] $SpecTypes = @('draft-mtp'),
   [int]      $Predict = 400,
   [Parameter(Mandatory=$true)][string] $Model
@@ -66,9 +66,14 @@ function Measure-Spec {
     return $null
   }
 
-  # Did the MTP head actually load? If blk.40 is still "unused ... ignoring",
-  # the draft head is NOT active and any speedup is imaginary.
-  $mtpIgnored = (Select-String -Path $slog -Pattern 'unused tensor blk\.40' -Quiet)
+  # Did the MTP head actually load? If its tensors are still "unused ...
+  # ignoring", the draft head is NOT active and any speedup is imaginary.
+  #
+  # Match the nextn tensors, NOT a hardcoded block index. The MTP layer sits at
+  # blk.<n_layer>, which is model-specific: blk.40 on a 40-layer model, blk.64
+  # on Qwen3.8-27B. A hardcoded index reports "MTP loaded = True" for EVERY run
+  # on any other model, baseline included.
+  $mtpIgnored = (Select-String -Path $slog -Pattern 'unused tensor blk\.\d+\.nextn' -Quiet)
 
   $body = @{ messages = @(@{role='user'; content=$PROMPT})
              max_tokens = $Predict; temperature = 0.6; top_p = 0.95
@@ -90,8 +95,8 @@ function Measure-Spec {
   Get-Process llama-server -ErrorAction SilentlyContinue | Stop-Process -Force
   Start-Sleep -Milliseconds 500
 
-  # Only draft-mtp needs blk.40 loaded. n-gram drafters use no model weights, so
-  # "unused tensor blk.40" is correct and expected for them -- do not warn.
+  # Only draft-mtp needs the nextn tensors loaded. n-gram drafters use no model weights, so
+  # "unused tensor blk.<n>.nextn" is correct and expected for them -- do not warn.
   $flag = if ($mtpIgnored -and $Label -like '*draft-mtp*') { '  <-- MTP TENSORS STILL IGNORED!' } else { '' }
   Write-Host ("{0,-24} TG={1,7} t/s   tokens={2,4}{3}" -f $Label,$tg,$n,$flag) `
     -ForegroundColor $(if($flag){'Yellow'}else{'Green'})
@@ -120,4 +125,5 @@ foreach ($r in $rows) {
 }
 Write-Host "`nbaseline TG = $base t/s" -ForegroundColor Cyan
 Write-Host "results: $out" -ForegroundColor DarkGray
+
 

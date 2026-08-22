@@ -66,30 +66,46 @@ function Ask($content, $maxTok) {
            -ContentType 'application/json' -Body ([Text.Encoding]::UTF8.GetBytes($body)) -TimeoutSec 900
 }
 
-$shallow = Ask 'Write a complete Python module implementing a thread-safe LRU cache with type hints, a decorator interface, TTL expiry and hit/miss statistics. Output only code.' 400
-Write-Host ("[$Label] shallow: PP={0} t/s over {1} tok | TG={2} t/s over {3} tok" -f `
-  [math]::Round($shallow.timings.prompt_per_second,1), $shallow.timings.prompt_n,
-  [math]::Round($shallow.timings.predicted_per_second,2), $shallow.timings.predicted_n)
+# The three requests below can throw -- most likely on the 900 s HTTP timeout,
+# but any transport error does it. Without try/finally an exception skips the
+# cleanup at the bottom and leaks BOTH an infinite nvidia-smi sampler job and a
+# running llama-server holding ~22 GiB of VRAM, which then silently breaks every
+# later run on this machine. Cleanup must be unconditional.
+try {
+  $shallow = Ask 'Write a complete Python module implementing a thread-safe LRU cache with type hints, a decorator interface, TTL expiry and hit/miss statistics. Output only code.' 400
+  Write-Host ("[$Label] shallow: PP={0} t/s over {1} tok | TG={2} t/s over {3} tok" -f `
+    [math]::Round($shallow.timings.prompt_per_second,1), $shallow.timings.prompt_n,
+    [math]::Round($shallow.timings.predicted_per_second,2), $shallow.timings.predicted_n)
 
-$d1 = Ask $hay 220
-Write-Host ("[$Label] deep#1 : PP={0} t/s over {1} tok | TG={2} t/s over {3} tok" -f `
-  [math]::Round($d1.timings.prompt_per_second,1), $d1.timings.prompt_n,
-  [math]::Round($d1.timings.predicted_per_second,2), $d1.timings.predicted_n)
-$needle = if ($d1.choices[0].message.content -match 'CRIMSON[-\s]?PELICAN[-\s]?4417') {'PASS'} else {'FAIL'}
-Write-Host "[$Label] needle in long answer: $needle"
+  $d1 = Ask $hay 220
+  Write-Host ("[$Label] deep#1 : PP={0} t/s over {1} tok | TG={2} t/s over {3} tok" -f `
+    [math]::Round($d1.timings.prompt_per_second,1), $d1.timings.prompt_n,
+    [math]::Round($d1.timings.predicted_per_second,2), $d1.timings.predicted_n)
+  $needle = if ($d1.choices[0].message.content -match 'CRIMSON[-\s]?PELICAN[-\s]?4417') {'PASS'} else {'FAIL'}
+  Write-Host "[$Label] needle in long answer: $needle"
 
-$d2 = Ask $hay 220
-Write-Host ("[$Label] deep#2 : PP={0} t/s over {1} tok (cache reuse test)" -f `
-  [math]::Round($d2.timings.prompt_per_second,1), $d2.timings.prompt_n)
-$sim = (Select-String -Path $slog -Pattern 'f_sim_best' | Select-Object -Last 1).Line
-if ($sim) { Write-Host "[$Label] $($sim -replace '\x1b\[[0-9;]*m','')" }
+  $d2 = Ask $hay 220
+  Write-Host ("[$Label] deep#2 : PP={0} t/s over {1} tok (cache reuse test)" -f `
+    [math]::Round($d2.timings.prompt_per_second,1), $d2.timings.prompt_n)
+  $sim = (Select-String -Path $slog -Pattern 'f_sim_best' | Select-Object -Last 1).Line
+  if ($sim) { Write-Host "[$Label] $($sim -replace '\x1b\[[0-9;]*m','')" }
 
-$acc = (Select-String -Path $slog -Pattern 'draft acceptance' | Select-Object -Last 1).Line
-if ($acc) { Write-Host "[$Label] $($acc -replace '\x1b\[[0-9;]*m','')" }
-
-Get-Process llama-server -EA SilentlyContinue | Stop-Process -Force
-Start-Sleep -Milliseconds 800
-Stop-Job $sampler -EA SilentlyContinue; Remove-Job $sampler -Force -EA SilentlyContinue
+  $acc = (Select-String -Path $slog -Pattern 'draft acceptance' | Select-Object -Last 1).Line
+  if ($acc) { Write-Host "[$Label] $($acc -replace '\x1b\[[0-9;]*m','')" }
+}
+catch {
+  Write-Host "[$Label] REQUEST FAILED: $_" -ForegroundColor Red
+  Write-Host "[$Label] no row appended -- partial results are worse than none." -ForegroundColor Yellow
+  $requestFailed = $true
+}
+finally {
+  Get-Process llama-server -EA SilentlyContinue | Stop-Process -Force
+  Start-Sleep -Milliseconds 800
+  Stop-Job $sampler -EA SilentlyContinue; Remove-Job $sampler -Force -EA SilentlyContinue
+}
+# Only record a row when ALL THREE responses came back. A half-populated row in
+# a results table is indistinguishable from a real measurement later on.
+if ($requestFailed) { return }
 $pk=@{}; foreach($l in (Get-Content $smi -EA SilentlyContinue)){ foreach($e in ($l -split ';')){ $q=$e -split ',\s*'; if($q.Count -ge 2){ $i=0;$v=0; if([int]::TryParse($q[0].Trim(),[ref]$i) -and [int]::TryParse($q[1].Trim(),[ref]$v)){ if(-not $pk.ContainsKey($i) -or $v -gt $pk[$i]){$pk[$i]=$v} } } } }
 $v0=$pk[0]; $v1=$pk[1]; $vt=($pk.Values|Measure-Object -Sum).Sum
 Write-Host ("[$Label] peak VRAM {0}/{1} = {2} MiB" -f $v0,$v1,$vt) -ForegroundColor Cyan

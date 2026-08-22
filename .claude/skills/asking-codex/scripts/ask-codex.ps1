@@ -19,7 +19,7 @@
 #  Examples:
 #    ./ask-codex.ps1 -Prompt "Is this regex vulnerable to catastrophic backtracking?"
 #    ./ask-codex.ps1 -PromptFile brief.md -Model gpt-5.6-sol -Effort high
-#    ./ask-codex.ps1 -Review -Base main -Prompt "Focus on error handling"
+#    ./ask-codex.ps1 -Review -Prompt "Focus on error handling in the auth changes"
 #    ./ask-codex.ps1 -Review -Uncommitted -Model gpt-5.6-luna -Effort low
 # ===========================================================================
 [CmdletBinding(DefaultParameterSetName = 'Text')]
@@ -160,8 +160,16 @@ if ($Isolated) {
 }
 
 # --- output plumbing ------------------------------------------------------
+# Resolve caller-supplied paths to ABSOLUTE now. The codex child runs with its
+# CWD set to $WorkDir (and -Isolated points that at a scratch dir), but these
+# paths are checked after we return to the caller's directory. A relative path
+# would therefore be written in one place and looked for in another: a correct
+# answer gets reported as "NO OUTPUT FILE PRODUCED".
 $stamp = [Guid]::NewGuid().ToString('N').Substring(0,8)
 if (-not $OutFile) { $OutFile = Join-Path $env:TEMP "codex-answer-$stamp.md" }
+elseif (-not [IO.Path]::IsPathRooted($OutFile)) {
+  $OutFile = Join-Path (Get-Location).Path $OutFile
+}
 $errLog = Join-Path $env:TEMP "codex-stderr-$stamp.log"
 Remove-Item $OutFile, $errLog -ErrorAction SilentlyContinue
 
@@ -186,6 +194,9 @@ if ($Effort)       { $a += @('-c', "model_reasoning_effort=$Effort") }
 if ($Json)         { $a += '--json' }
 if ($OutputSchema) {
   if (-not (Test-Path $OutputSchema)) { Fail "OutputSchema not found: $OutputSchema" }
+  # Same reason as $OutFile: the child runs in $WorkDir and would not find a
+  # path that was valid only in the caller's directory.
+  $OutputSchema = (Resolve-Path $OutputSchema).Path
   $a += @('--output-schema', $OutputSchema)
 }
 # "-" makes codex read the prompt from stdin. For -Review with no extra
@@ -271,3 +282,4 @@ if (Test-Path $OutFile) {
   ($stdout -split "`r?`n") | Select-Object -Last 20
   exit 1
 }
+

@@ -81,8 +81,8 @@ longer essential.
 > historical reference for the 73 recorded runs, not as an experimental control.
 
 ```
-Build CONTROL   : e85caa81e + MSVC + CUDA 13.1, default flags
-Build TREATMENT : e85caa81e + MSVC + CUDA 13.1, FA_ALL_QUANTS=ON, SCHED_MAX_COPIES=1
+Build CONTROL   : e85caa81e + MSVC + CUDA 13.3, default flags
+Build TREATMENT : e85caa81e + MSVC + CUDA 13.3, FA_ALL_QUANTS=ON, GGML_SCHED_MAX_COPIES=1
 Compare         : CONTROL vs TREATMENT     <- attributable to the flags
 Do NOT compare  : baseline  vs TREATMENT   <- confounded by source+compiler+CUDA
 ```
@@ -148,9 +148,11 @@ Deliberately **not** passed, and why:
 
 ## 6. Risks worth naming up front
 
-- **CUDA 13.3 → 13.1 is a regression risk** on Blackwell. If TREATMENT looks slower than the
-  shipped baseline, this is the first suspect, not the flags. Having a CONTROL build makes that
-  distinguishable.
+- ~~CUDA 13.3 → 13.1 regression risk~~ — **RESOLVED.** Toolkit 13.3.73 is installed and the
+  build script now pins it explicitly (the machine's `CUDA_PATH`/PATH still say 13.1, so this
+  had to be forced rather than inherited). Confirmed in the control build log:
+  `The CUDA compiler identification is NVIDIA 13.3.73`. CUDA is no longer a confound, and a
+  slowdown must not be attributed to it.
 - **Disk and OneDrive.** Two CUDA build trees are several GB each. `build*/` is gitignored, but
   this folder is inside OneDrive, which will try to sync every object file. Consider pausing
   sync, or building outside OneDrive entirely.
@@ -167,11 +169,14 @@ Deliberately **not** passed, and why:
 **Can settle:** whether `FA_ALL_QUANTS` makes asymmetric `q8_0`/`q4_0` viable, and whether
 `GGML_SCHED_MAX_COPIES=1` reproduces the fallback path deterministically.
 
-**Cannot settle:** whether a self-compiled binary beats the shipped one. Too many axes differ,
-and one of them (CUDA) is worse. Anyone wanting that answer needs Clang 20.1.8 and CUDA 13.3
-locally, which we do not have.
+**Cannot settle:** whether a self-compiled binary beats the shipped one. Source drift (+73
+commits, and a `0.1.2-dev` → `0.2.0-dev` minor bump) and the host-compiler difference remain.
+CUDA is **no longer** one of the reasons — 13.3.73 is installed and in use. Matching the
+baseline's host toolchain exactly would additionally need Clang 20.1.8, though note the CUDA
+backend was always MSVC, so that gap affects only CPU-side code.
 
 **Still open even on success:** whether `q8_0`/`q4_0` is actually *better* than symmetric
 `q8_0` once it runs at full speed. It saves ~1 GiB and protects keys, but on this model we
 measured `q4_0/q4_0` as no faster than `q8_0/q8_0` — so the win may be memory only, and we have
 no quality evidence either way.
+

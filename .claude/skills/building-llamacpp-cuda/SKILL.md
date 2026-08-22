@@ -134,7 +134,7 @@ $env:PATH = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.1\bin\x64;$e
 **Always smoke-test after a build** — the script does this automatically:
 
 ```powershell
-.\build\bin\llama-bench.exe --version     # must list both CUDA devices
+.\build\bin\llama-server.exe --version    # prints build/commit + lists both CUDA devices
 ```
 
 If it prints nothing, suspect missing runtime DLLs before suspecting the build.
@@ -206,4 +206,5 @@ numbers. Report the build with every result — `llama-server.exe --version` pri
 
 - `scripts/build-llamacpp.ps1` — detects vcvars/ninja/CUDA arch, configures with Ninja inside
   the VS environment, builds, then smoke-tests the result. **Run it, don't read it.**
+
 
