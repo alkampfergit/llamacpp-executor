@@ -50,6 +50,26 @@ $Global:LCB_OUT   = if ($OutDir) { $OutDir } else { Join-Path $LCB_DIR 'bench-re
 $Global:LCB_LOGS  = Join-Path $LCB_OUT 'logs'
 $Global:LCB_TSV   = Join-Path $LCB_OUT 'results.tsv'
 
+# A freshly built llama.cpp exe exits INSTANTLY WITH NO OUTPUT AT ALL when the
+# CUDA runtime DLLs are not resolvable -- there is no error message to diagnose,
+# so make it impossible rather than documenting it. The baseline binaries ship
+# their own cudart beside them and are unaffected; build-*/bin ones are not.
+# Get-Command cannot probe for this: .dll is not in PATHEXT, so it would always
+# report "not found" and the guard would then fire on every dot-source.
+$cudartName   = 'cudart64_13.dll'
+$cudartOnPath = $env:PATH -split ';' | Where-Object {
+                  $_ -and (Test-Path (Join-Path $_ $cudartName)) } | Select-Object -First 1
+if (-not $cudartOnPath) {
+  $cudaRoot = Join-Path ${env:ProgramFiles} 'NVIDIA GPU Computing Toolkit\CUDA'
+  $newest = Get-ChildItem $cudaRoot -Directory -ErrorAction SilentlyContinue |
+    Where-Object { Test-Path (Join-Path $_.FullName "bin\x64\$cudartName") } |
+    Sort-Object { [version]($_.Name -replace '^v','') } -Descending | Select-Object -First 1
+  if ($newest) {
+    $x64 = Join-Path $newest.FullName 'bin\x64'
+    $env:PATH = $x64 + ';' + (Join-Path $newest.FullName 'bin') + ';' + $env:PATH
+    Write-Host "PATH += $x64 (CUDA runtime for freshly built binaries)" -ForegroundColor DarkGray
+  }
+}
 New-Item -ItemType Directory -Force -Path $LCB_LOGS | Out-Null
 if (-not (Test-Path $LCB_TSV)) {
   "run_utc`tsuite`tlabel`tstatus`tmodel`tctx`tnpp`tntg`tpp_ts`ttg_ts`tvram0`tvram1`tvram_total`tsecs`targs" |
@@ -130,7 +150,14 @@ function Probe {
   # -c is passed here rather than by the caller so it can never be forgotten.
   $argv = @('-m', $Model, '-c', "$Ctx", '-npp', $Npp, '-ntg', $Ntg, '-npl', '1') +
           ($A | Where-Object { $_ -ne '-c' })
-  $out  = & $exe @argv 2>&1 | ForEach-Object { [string]$_ }
+  # ggml's backend registry resolves backend DLLs relative to the WORKING
+  # DIRECTORY, not the exe. A build launched from elsewhere has been observed
+  # loading ggml-rpc.dll / ggml-cpu-haswell.dll out of a DIFFERENT build's
+  # folder, because those filenames do not exist in the new one -- silently
+  # mixing two builds into one measurement. Pin the cwd so it cannot happen.
+  Push-Location $Global:LCB_DIR
+  try     { $out = & $exe @argv 2>&1 | ForEach-Object { [string]$_ } }
+  finally { Pop-Location }
 
   $secs = [math]::Round($sw.Elapsed.TotalSeconds, 1)
   $peak = Stop-VramSampler -Job $sampler -Path $smiFile

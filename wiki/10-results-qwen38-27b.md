@@ -259,7 +259,7 @@ that speculative decoding pays for itself by amortising an expensive target forw
 **dense** model with an MTP head is exactly the case that should win. The vendor claims 1.73x on
 the 27 B dense against 1.17x on the MoE — the same shape of claim.
 
-**The measurement.** `scripts/mtp-test.ps1`, `-c 65536`, `-ub 512`, `q8_0` KV, `-ts 22,43`,
+**The measurement.** `mtp-test.ps1` (`.claude/skills/tuning-llamacpp-configs/scripts/`), `-c 65536`, `-ub 512`, `q8_0` KV, `-ts 22,43`,
 400-token code-shaped generation, one fresh server per point:
 
 | `--spec-draft-n-max` | TG t/s | vs baseline | Draft acceptance | Mean accepted run |
@@ -547,7 +547,7 @@ Add `--jinja` if you need tool calling. It was **not** enabled for any measureme
 
 | Experiment | Why it matters |
 | --- | --- |
-| **Rebuild with `-DGGML_CUDA_FA_ALL_QUANTS=ON`** | `q8_0` keys + `q4_0` values would save ~1000 MiB at 130k — almost exactly the 1.1 GiB the MTP draft graph needs. The one change that would make profile A comfortable. **Top priority** |
+| ~~**Rebuild with `-DGGML_CUDA_FA_ALL_QUANTS=ON`**~~ — **DONE, see [chapter 14](14-build-experiment.md)** | `q8_0` keys + `q4_0` values would save ~1000 MiB at 130k — almost exactly the 1.1 GiB the MTP draft graph needs. Measured: asymmetric KV goes ×30.5 and then costs nothing. `GGML_SCHED_MAX_COPIES=1`, built at the same time, independently frees ~845 MiB |
 | Why the MTP draft graph needs 1.1 GiB, and whether it can be capped | `-ub` and `-ctkd` both failed to shrink it (§10.7). A build-level answer may exist |
 | `draft-mtp` x `n-max` at *deep* context | The n-max sweep was run at 65k. The plateau may sit elsewhere at 108k, where amortisation is worse |
 | Quality above 108k | Profile D offers 192k and nothing validates it. The haystack would need to be ~1.8x longer |
@@ -615,12 +615,12 @@ the boundary, which is the point of recording it.
 - `llama-bench` was not used at all: it has no `-c`, so it never allocates the real KV cache and
   cannot answer a memory question (§5.2).
 - One fresh process per data point, enforced by
-  [`scripts/bench-harness.ps1`](scripts/bench-harness.ps1); every row was appended to
-  `results.tsv` before the next run started.
+  [`bench-harness.ps1`](../.claude/skills/tuning-llamacpp-configs/scripts/bench-harness.ps1);
+  every row was appended to `results.tsv` before the next run started.
 - `--spec-type` cannot be measured by either bench binary. Speculative-decoding numbers come from
-  [`scripts/mtp-test.ps1`](scripts/mtp-test.ps1) (shallow) and
-  [`scripts/deep-probe-q38.ps1`](scripts/deep-probe-q38.ps1) (deep, plus peak VRAM and
-  prompt-cache checks), both driving `llama-server` over HTTP.
+  [`mtp-test.ps1`](../.claude/skills/tuning-llamacpp-configs/scripts/mtp-test.ps1) (shallow) and
+  [`deep-probe-q38.ps1`](../.claude/skills/tuning-llamacpp-configs/scripts/deep-probe-q38.ps1)
+  (deep, plus peak VRAM and prompt-cache checks), both driving `llama-server` over HTTP.
 - **Unverified precondition.** The NVIDIA *CUDA — Sysmem Fallback Policy* setting could not be
   confirmed from the command line. Device-0 failures were clean OOMs, and the rows marked
   *saturated* degraded 20–25% rather than failing — consistent with, but not proof of, the §5.3

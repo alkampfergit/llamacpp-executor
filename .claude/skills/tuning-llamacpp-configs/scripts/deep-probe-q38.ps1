@@ -47,7 +47,7 @@ $smi = Join-Path $env:TEMP "deepvram_$Label.csv"
 if (Test-Path $smi) { Remove-Item $smi -Force }
 $sampler = Start-Job -ScriptBlock { param($p) while($true){ try{ Add-Content -Path $p -Value ((nvidia-smi --query-gpu=index,memory.used --format=csv,noheader,nounits) -join ';') -EA SilentlyContinue }catch{}; Start-Sleep -Milliseconds 400 } } -ArgumentList $smi
 
-$p = Start-Process -FilePath (Join-Path $LC 'llama-server.exe') -ArgumentList $argv -PassThru -WindowStyle Hidden -RedirectStandardError $slog
+$p = Start-Process -FilePath (Join-Path $LC 'llama-server.exe') -WorkingDirectory $LC -ArgumentList $argv -PassThru -WindowStyle Hidden -RedirectStandardError $slog
 $ready = $false
 foreach ($i in 1..90) { Start-Sleep -Seconds 2
   try { if ((Invoke-RestMethod "http://127.0.0.1:$Port/health" -TimeoutSec 3).status -eq 'ok'){ $ready=$true; break } } catch {}

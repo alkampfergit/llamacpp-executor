@@ -4,7 +4,12 @@ Prebuilt Windows CUDA llama.cpp binaries in the root (gitignored), a tuning wiki
 and the upstream source as a submodule in `llama.cpp/`.
 
 Hardware: RTX 3070 (8 GiB, device 0) + RTX 5060 Ti (16 GiB, device 1, **drives the display**).
-Compute capabilities `8.6` and `12.0` → `-DCMAKE_CUDA_ARCHITECTURES="86;120"`.
+Compute capabilities `8.6` and `12.0` → `-DCMAKE_CUDA_ARCHITECTURES="86-real;120-real"`.
+**Use the `-real` suffix.** A bare `86;120` also emits PTX for those same two architectures,
+which neither card can ever use because both have native SASS — measured at 141 redundant PTX
+blobs per architecture in `build-control` and 186 in `build-fa`. ggml rewrites `120-real` →
+`120a-real` itself, so do not type the `a`. The build script now appends `-real` to any list it
+derives from `nvidia-smi`. See `wiki/14-build-experiment.md` §14.2.
 
 ## When a benchmark result looks strange, read the source
 
@@ -14,7 +19,7 @@ both were settled in minutes by reading the code:
 
 | Symptom | Wrong guess | What the source said |
 | --- | --- | --- |
-| KV cache `q8_0`/`q4_0` was 14× slower than `q8_0`/`q8_0` | "4-bit KV is slow" | `ggml/src/ggml-cuda/fattn.cu`: `if (K->type != V->type) return BEST_FATTN_KERNEL_NONE;` — only four *symmetric* pairs are compiled. Attention was leaving the GPU. |
+| KV cache `q8_0`/`q4_0` was 14× slower than `q8_0`/`q8_0` | "4-bit KV is slow" | `ggml/src/ggml-cuda/fattn.cu`: `if (K->type != V->type) return BEST_FATTN_KERNEL_NONE;` — only four *symmetric* pairs are compiled. Attention was leaving the GPU. (That guard is `#ifndef GGML_CUDA_FA_ALL_QUANTS`; `wiki/14-build-experiment.md` measures the rebuild at ×30.5.) |
 | Setting `$env:GGML_SCHED_MAX_COPIES=1` appeared to gain 13% | "it disables pipeline parallelism" | `ggml/src/ggml-backend.cpp`: it is a compile-time `#define`, never read from the environment. The gain was noise. |
 
 Applies to: a result that contradicts a documented claim, a flag that "works" but is
@@ -73,39 +78,51 @@ numbers; never swap one in for the other. State the build in any result you repo
 `llama-server.exe --version` gives `version: 0.1.2-dev (build 10509, commit fe8156f78)` for the
 baseline.
 
-## Every harness script exists TWICE — fix both, or the fix is worthless
+## Scripts live in ONE place — `.claude/skills/tuning-llamacpp-configs/scripts/`
 
-Three scripts are deliberately duplicated, and all three have diverged:
+There is no `wiki/scripts/` directory. Every operative PowerShell script — the benchmark
+harness, the MTP and needle quality gates, the `serve-*` launchers, and the deep-probe /
+resume-benchmarks helpers — lives under `.claude/skills/tuning-llamacpp-configs/scripts/`.
+The wiki's chapters only *reference* these scripts by path; they do not carry their own copy.
 
-| Script | Repo copy | Portable copy |
-| --- | --- | --- |
-| `bench-harness.ps1` | `wiki/scripts/` | `.claude/skills/tuning-llamacpp-configs/scripts/` |
-| `mtp-test.ps1` | `wiki/scripts/` | `.claude/skills/tuning-llamacpp-configs/scripts/` |
-| `needle-test.ps1` | `wiki/scripts/` | `.claude/skills/tuning-llamacpp-configs/scripts/` |
+This used to not be true. Three scripts (`bench-harness.ps1`, `mtp-test.ps1`,
+`needle-test.ps1`) existed twice — once under `wiki/scripts/`, once under the skill — and the
+two copies diverged, silently, twice (see the historical scars below). That duplication has
+been removed. **Do not recreate it** by copying a script back into `wiki/` "just for the
+wiki" — add a reference to the skill copy instead.
 
-**Divergence is intentional for portability** — the skill copies take a mandatory `-Model`,
-auto-locate `llama.cpp`, and write to `bench-results/` instead of `wiki/benchmarks/`. That part
-should differ.
+**`bench-harness.ps1`, `mtp-test.ps1` and `needle-test.ps1` are portable, not this-repo-specific**:
+`-Model` is mandatory (there is no built-in default model path), `llama.cpp` is auto-located
+from the script's own path, and results default to `bench-results/` next to the binaries
+rather than `wiki/benchmarks/`. That default is right for a copy run from an arbitrary
+location, but **it is not this repo's own workflow** — `wiki/benchmarks/` is the durable,
+committed evidence trail (see Conventions below). All three accept `-OutDir` to override the
+default; pass `-OutDir S:\OneDrive\Tools\llamacpp\wiki\benchmarks` whenever a run in *this*
+repo should land in the wiki's evidence trail instead of `bench-results/`. Don't let evidence
+start landing in the portable default silently — say where it went. (`resume-benchmarks.ps1`
+already defaults `-Model`/`-OutDir` to this repo's own values; the `serve-*.ps1` and
+`deep-probe-q38.ps1` scripts were always this-repo-specific and hardcode their own paths.)
 
-**Divergence is a bug for everything else.** Fixing one copy and not the other has already
-happened twice in this repo:
-
-- The hardcoded `blk.40` MTP detector was fixed in `wiki/scripts/`, left broken in the skill
-  copy, and had to be fixed a third time in a doc comment. On any model whose head is not at
-  `blk.40` it reports "MTP loaded" for *every* run, including baselines.
-- `llama-bench --version` (not a valid flag) was documented as wrong in this file, then
-  reintroduced in the build script's smoke test, where it made a **successful** build report
-  exit code 1.
-
-> **Standing rule: after fixing any bug, grep the whole repo for siblings before declaring it
-> done.** A fix applied to one instance of a duplicated pattern is not a fix.
-
-```powershell
-# always do this after a fix
-Get-ChildItem -Recurse -Include *.ps1,*.md | Select-String -Pattern '<the bad pattern>'
-# and check whether the two copies still agree where they should
-Get-FileHash wiki\scripts\X.ps1, .claude\skills\*\scripts\X.ps1
-```
+> **Historical scars — why "fix one copy" was never good enough, back when there were two:**
+> - The MTP detector once grepped a hardcoded `unused tensor blk.40`. The MTP layer sits at
+>   `blk.<n_layer>`, which is model-specific — `blk.40` on one model, `blk.64` on another — so
+>   the hardcoded version reported "MTP loaded" for *every* run on any other model, baselines
+>   included. It was fixed in one copy, left broken in the other, and had to be fixed a third
+>   time in a doc comment before both copies matched. It now matches
+>   `unused tensor blk\.\d+\.nextn`, which is model-agnostic.
+> - `llama-bench --version` (not a valid flag) was documented as wrong in this file, then
+>   reintroduced in the build script's smoke test, where it made a **successful** build report
+>   exit code 1.
+>
+> Both were caught only by grepping the whole repo for the pattern after fixing one instance.
+> **Standing rule, and it survives the duplication going away: after fixing any bug, grep the
+> whole repo for siblings before declaring it done.** A fix applied to one instance of a
+> repeated pattern is not a fix.
+>
+> ```powershell
+> # always do this after a fix
+> Get-ChildItem -Recurse -Include *.ps1,*.md | Select-String -Pattern '<the bad pattern>'
+> ```
 
 ## A measurement is only valid if all of these hold
 

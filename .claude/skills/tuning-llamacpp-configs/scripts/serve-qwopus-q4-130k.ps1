@@ -58,9 +58,10 @@ Write-Host "A 'retrying without pipeline parallelism' warning is EXPECTED here."
 
 if ($Background) {
   $log = Join-Path $LC 'wiki\benchmarks\server.log'
-  Start-Process -FilePath (Join-Path $LC 'llama-server.exe') -ArgumentList $argv `
+  Start-Process -FilePath (Join-Path $LC 'llama-server.exe') -WorkingDirectory $LC -ArgumentList $argv `
     -WindowStyle Hidden -RedirectStandardError $log
   Write-Host "Running in background. Log: $log"
 } else {
-  & (Join-Path $LC 'llama-server.exe') @argv
+  Push-Location $LC
+  try { & (Join-Path $LC 'llama-server.exe') @argv } finally { Pop-Location }
 }

@@ -91,7 +91,17 @@ costs startup time and can lose performance.
 > ### ⚠️ A previous build on this machine used `"86;89"` — that is WRONG
 > `86` is correct for the RTX 3070 (Ampere, 8.6). But the RTX 5060 Ti is **Blackwell, compute
 > 12.0**, not Ada 8.9. CMake's own native detection reported `86-real;120a-real` while the
-> build was being told `86;89`. Use **`"86;120"`** on this hardware.
+> build was being told `86;89`. Use **`"86-real;120-real"`** on this hardware.
+
+**Prefer `-real` whenever you know which GPUs will run the binary**, which on a fixed machine
+is always. The suffixes are: `-real` = SASS only, `-virtual` = PTX only, **no suffix = both**.
+A bare `86;120` therefore ships a complete second copy of every kernel as PTX that the driver
+will never reach for, because SASS for both architectures is already present — 141 redundant
+blobs per architecture in a default build, 186 with `GGML_CUDA_FA_ALL_QUANTS=ON`.
+Do **not** write `120a-real` yourself: `ggml/src/ggml-cuda/CMakeLists.txt` rewrites `12X` to
+`12Xa` and preserves the suffix. Omit `-real` only if you deliberately want a JIT fallback for
+some *other* GPU. This script appends `-real` automatically to any list it derives from
+`nvidia-smi`; an explicit `-CudaArch` is passed through verbatim.
 
 Derive it from live data, never from the GPU's marketing name:
 
@@ -147,7 +157,7 @@ If it prints nothing, suspect missing runtime DLLs before suspecting the build.
 | --- | --- |
 | `-DGGML_CUDA=ON` | The whole point. Omit for a CPU-only build. |
 | `-DCMAKE_BUILD_TYPE=Release` | Mandatory. A Debug CUDA build is unusably slow. |
-| `-DCMAKE_CUDA_ARCHITECTURES="86;120"` | See §3. |
+| `-DCMAKE_CUDA_ARCHITECTURES="86-real;120-real"` | See §3. `-real` = SASS only; a bare number also emits unusable PTX. |
 | `-DGGML_CUDA_FA_ALL_QUANTS=ON` | Compiles the **full** flash-attention KV matrix. Without it only `f16/f16`, `bf16/bf16`, `q8_0/q8_0`, `q4_0/q4_0` exist and any other pair silently costs ~14×. Long compile, much larger binary. |
 | `-DGGML_SCHED_MAX_COPIES=1` | Disables pipeline parallelism at compile time (it is a `#define`, **not** an env var). Usually faster on mismatched GPUs. |
 | `-DGGML_CCACHE=OFF` | Silences the "ccache not found" warning. |

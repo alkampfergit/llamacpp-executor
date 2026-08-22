@@ -190,8 +190,23 @@ if ($CpuOnly) {
               ForEach-Object { $_.Trim() -replace '\.', '' } |
               Where-Object { $_ } | Sort-Object { [int]$_ } -Unique
       if ($caps) {
-        $CudaArch = ($caps -join ';')
+        # "-real" = SASS only, no PTX. Correct BY CONSTRUCTION here: this list was
+        # derived from the GPUs physically present, so PTX for those same
+        # architectures could only ever be a second, unreachable copy of every
+        # kernel -- the driver always prefers SASS. A bare "86" emits both.
+        #
+        # This was a real defect: build-control and build-fa were built with bare
+        # numbers and each carries a full redundant PTX image (141 and 186 blobs
+        # per architecture). No runtime effect -- neither card JITs -- but the
+        # binaries are needlessly large. See wiki/14-build-experiment.md 14.2.
+        #
+        # Safe with Blackwell: ggml/src/ggml-cuda/CMakeLists.txt rewrites 12X to
+        # 12Xa and PRESERVES the suffix, so "120-real" becomes "120a-real".
+        $CudaArch = (($caps | ForEach-Object { "$_-real" }) -join ';')
         Write-Host "Detected $($caps.Count) distinct architecture(s) across $((nvidia-smi -L | Measure-Object).Count) GPU(s)."
+        Write-Host "Using -real (SASS only, no PTX): every installed GPU has native code," -ForegroundColor DarkGray
+        Write-Host "so PTX for these same architectures would never be used. Pass -CudaArch" -ForegroundColor DarkGray
+        Write-Host "with bare numbers (e.g. '86;120') if you want a JIT fallback for OTHER GPUs." -ForegroundColor DarkGray
       }
     } catch {}
   }
@@ -199,7 +214,7 @@ if ($CpuOnly) {
   Write-Host "-DCMAKE_CUDA_ARCHITECTURES=`"$CudaArch`""
   nvidia-smi --query-gpu=index,name,compute_cap --format=csv | Write-Host
   # A wrong arch is SILENT: the binary works but JIT-compiles from PTX.
-  if ($CudaArch -match '\b89\b' -and $CudaArch -notmatch '\b120\b') {
+  if ($CudaArch -match '\b89(-real|-virtual)?\b' -and $CudaArch -notmatch '\b12[0-9]a?(-real|-virtual)?\b') {
     Write-Host "NOTE: 89 is Ada. Blackwell cards (RTX 50xx) are 120 -- verify against the table above." -ForegroundColor Yellow
   }
 }

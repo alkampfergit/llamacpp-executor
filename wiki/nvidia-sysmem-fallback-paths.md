@@ -116,7 +116,7 @@ Deliberately ask for slightly too much and check that it now **fails** instead o
 
 ```powershell
 cd S:\OneDrive\Tools\llamacpp
-. .\wiki\scripts\bench-harness.ps1
+. .\.claude\skills\tuning-llamacpp-configs\scripts\bench-harness.ps1 -OutDir wiki\benchmarks
 Probe "policycheck" @('-ub','512','-ts','20,45','-ctk','q8_0','-ctv','q8_0',
                       '-fa','on','-ngl','999','-fit','off') `
   -Ctx 130048 -Npp '8192' `

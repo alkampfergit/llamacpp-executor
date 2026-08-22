@@ -1,5 +1,13 @@
 # Pre-build plan: what would actually differ from the baseline
 
+> **✅ Executed. Results in [chapter 14](14-build-experiment.md).** This page is left exactly
+> as it was written — it is the pre-registration, and editing it after seeing the numbers would
+> destroy the only thing it is good for. Scorecard: the design held (a rebuilt CONTROL was
+> necessary and the control did reproduce the baseline exactly); hypothesis 1 was confirmed at
+> ×30.5; **hypothesis 2 was refuted** — `GGML_SCHED_MAX_COPIES=1` is a ~845 MiB memory saving,
+> not a speed-up; and the compile-time risk called out in §6 was wrong in the cheap direction,
+> at 10.4 min rather than the expected long pole.
+
 Written **before** any compile, so the experiment can be judged on its design rather than on
 whatever number comes out. Nothing in this repository has ever been measured on a
 self-compiled binary — all 73 recorded runs used the shipped baseline.

@@ -49,6 +49,7 @@ and come back later when you want to know *why* it looks like that.
 | 11 | [Choosing the *file*](11-quant-selection-qwen38.md) | Which GGUF quant to download, and an audit of a third-party report: what survived measurement, what cost 27× the host buffer, and the one thing it got right that we never tested |
 | 12 | [Auditing a *build* report](12-build-flags-analysis.md) | Which `cmake` flags actually change the binary — and how `cuobjdump` settled in four seconds what a rebuild would have taken ninety minutes to answer. Half the flags in a third-party report are already the default; one of ours does not exist |
 | 13 | [The speculative-decoding landscape](13-speculative-decoding-landscape.md) | **DFlash2, DSpark and PFlash.** What `--spec-type` really does with a list (a priority cascade, not a sum), why an n-gram outranks your MTP head, why DFlash2 cannot fit at 130k here, and the one thing that beats every speedup in this wiki: **a speedup that competes with your prompt cache looks identical to one that composes with it — until the second request** |
+| 14 | [The build experiment](14-build-experiment.md) | **The first numbers in this wiki not produced by the shipped binaries.** Two self-compiled builds differing in exactly two flags: what `GGML_CUDA_FA_ALL_QUANTS` is worth (asymmetric KV, measured), what `GGML_SCHED_MAX_COPIES=1` is worth (not throughput — VRAM), and why the control must be a *rebuild* rather than the baseline |
 
 ---
 
@@ -85,25 +86,49 @@ wiki/
 ├── 07-recommended-configs.md
 ├── 08-troubleshooting.md
 ├── 09-speculative-decoding.md
-├── benchmarks/
-│   ├── results.tsv               ← every throughput measurement, append-only
-│   ├── needle-results.md         ← long-context quality-gate results
-│   ├── mtp-results.md            ← speculative-decoding results
-│   └── logs/                     ← full stdout+stderr per run
-└── scripts/
-    ├── bench-harness.ps1         ← the measurement harness (dot-source, call Probe)
-    ├── resume-benchmarks.ps1     ← the remaining measurement queue
-    ├── needle-test.ps1           ← long-context QUALITY gate (run before trusting q4_0 KV)
-    ├── mtp-test.ps1              ← speculative-decoding measurement over HTTP
-    ├── serve-qwopus-130k.ps1     ← Profile A: q8_0 KV, full 130k (quality-first)
-    ├── serve-qwopus-q4-130k.ps1  ← Profile B: q4_0 KV, full 130k (speed-first)
-    ├── serve-qwopus-fast.ps1     ← Profile C: q8_0 KV at 127k (best all-round)
-    └── serve-qwen36-130k.ps1     ← Profile D: Q3_K_XL with headroom
+├── 10-results-qwen38-27b.md
+├── 11-quant-selection-qwen38.md
+├── 12-build-flags-analysis.md
+├── 13-speculative-decoding-landscape.md
+├── 14-build-experiment.md        ← CONTROL vs TREATMENT, self-compiled
+├── pre-build-plan.md             ← written BEFORE the build, so the design can be judged
+├── nvidia-sysmem-fallback-paths.md
+└── benchmarks/
+    ├── results.tsv               ← every BASELINE throughput measurement, append-only
+    ├── needle-results.md         ← long-context quality-gate results
+    ├── mtp-results.md            ← speculative-decoding results
+    ├── logs/                     ← full stdout+stderr per run
+    └── build-experiment/         ← ch.14 only: self-compiled builds, kept SEPARATE
+        ├── results.tsv           ←   so baseline rows and rebuild rows can never be
+        └── logs/                 ←   silently averaged together
 ```
 
-There is also a reusable **skill** at `.claude/skills/tuning-llamacpp-configs/` that teaches
-this whole method to Claude Code, so you can run `/tuning-llamacpp-configs <model.gguf>` on any
-future model or GPU and get the same procedure applied automatically.
+There is no `wiki/scripts/` — every operative script (the measurement harness, the
+quality gates, the `serve-*` launchers) lives under the reusable **skill** at
+[`.claude/skills/tuning-llamacpp-configs/scripts/`](../.claude/skills/tuning-llamacpp-configs/scripts/),
+which this wiki only references. That skill also teaches the whole method to Claude Code, so
+you can run `/tuning-llamacpp-configs <model.gguf>` on any future model or GPU and get the same
+procedure applied automatically:
+
+```
+.claude/skills/tuning-llamacpp-configs/scripts/
+├── bench-harness.ps1         ← the measurement harness (dot-source, call Probe)
+├── resume-benchmarks.ps1     ← this repo's remaining measurement queue
+├── needle-test.ps1           ← long-context QUALITY gate (run before trusting q4_0 KV)
+├── mtp-test.ps1              ← speculative-decoding measurement over HTTP
+├── deep-probe-q38.ps1        ← real deep-context HTTP numbers for Qwen3.8-27B
+├── vram-budget.ps1           ← hardware discovery, -c x -ub feasibility grid
+├── serve-qwopus-130k.ps1     ← Profile A: q8_0 KV, full 130k (quality-first)
+├── serve-qwopus-q4-130k.ps1  ← Profile B: q4_0 KV, full 130k (speed-first)
+├── serve-qwopus-fast.ps1     ← Profile C: q8_0 KV at 127k (best all-round)
+├── serve-qwen36-130k.ps1     ← Profile D: Q3_K_XL with headroom
+└── serve-qwen38-27b.ps1      ← the four measured profiles for Qwen3.8-27B Q4_K_M
+```
+
+All of them require `-Model`, and the benchmark scripts default their output to
+`bench-results/` next to the binaries — pass `-OutDir wiki\benchmarks` (or the repo-specific
+defaults already baked into `resume-benchmarks.ps1`) to keep this repo's own evidence trail
+landing in `wiki/benchmarks/`.
 
 ---
 

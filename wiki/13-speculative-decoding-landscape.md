@@ -548,7 +548,8 @@ You get a per-token divergence distribution instead of a single pass/fail. Where
 | Does MTP / DFlash / DSpark degrade quality? | **Neither — it is provably exact** | The target verifies every drafted token; the output distribution is unchanged by construction (§10.7). A KLD of 0 here proves the harness works, not that drafting is safe |
 | Does PFlash degrade quality? | **KLD, and it is the only honest gate** | PFlash changes *what the target sees*. It is not distribution-preserving. This is precisely the case single-needle NIAH cannot see |
 
-Two cheaper additions, both pure scripting against `scripts/needle-test.ps1`:
+Two cheaper additions, both pure scripting against
+`.claude/skills/tuning-llamacpp-configs/scripts/needle-test.ps1`:
 
 - **Multi-needle**: plant four or five distinct passphrases at different depths and require all
   of them. Catches the "retained a small fraction" failure that one needle cannot.
@@ -603,7 +604,7 @@ in `S:\OneDrive\Tools\llamacpp\` with nothing downloaded and nothing built.
 | **E1** | **Does the cascade demote MTP?** Three points at `-c 65536`, `-ts 22,43`, `q8_0` KV, 400-token code generation, one fresh server each — baseline / `draft-mtp` / `ngram-mod,draft-mtp`. Add `-lv 4` to get the per-implementation stats line | `--spec-type ngram-mod,draft-mtp --spec-draft-n-max 4 -lv 4` | **~25 min** | §13.5 step 4. `common_speculative_print_stats` prints `#gen drafts` and `#acc tokens` **per implementation**, so you see directly how many token positions the n-gram stole from MTP and at what acceptance |
 | **E2** | **Confirm the silent no-op.** Start with `--spec-type draft-dflash` and no `-md`. Check the slot JSON for `"speculative": false` and grep the default-verbosity log for any warning | `--spec-type draft-dflash` (no `-md`) | **~5 min** | §13.3. Records the exact (absent) log signature so a future DFlash run that quietly does nothing is caught in seconds |
 | **E3** | **`--spec-type none` vs omitting it.** Both should give no drafting; `none` should additionally suppress auto-detection | — | **~5 min** | Confirms our §10.7 baselines were genuinely undrafted, and gives a safe way to A/B once a drafter file is on disk |
-| **E4** | **Multi-needle and sequential-needle gates.** Extend `scripts/needle-test.ps1`: 4–5 passphrases at different depths; then a 3-hop chained variant | script change | **~30 min to write, ~10 min per config** | §13.8. Turns our weakest evidence into something that can actually fail. Prerequisite for trusting any prefill-side method later |
+| **E4** | **Multi-needle and sequential-needle gates.** Extend `.claude/skills/tuning-llamacpp-configs/scripts/needle-test.ps1`: 4–5 passphrases at different depths; then a 3-hop chained variant | script change | **~30 min to write, ~10 min per config** | §13.8. Turns our weakest evidence into something that can actually fail. Prerequisite for trusting any prefill-side method later |
 
 ### Today, if a prose/code corpus is already local — otherwise a small download
 

@@ -74,9 +74,27 @@ Anything else falls off the fast path and **attention leaves the GPU entirely**:
 These configurations **load cleanly and produce correct output**. The only visible symptom is
 gigabytes appearing in *host* RAM (5277 MiB instead of 793).
 
-> **NEVER mix KV types. NEVER use `q5_1`, `q5_0`, `q4_1`, or `iq4_nl`.**
+> **NEVER mix KV types. NEVER use `q5_1`, `q5_0`, `q4_1`, or `iq4_nl`** — *on a stock build.*
 > Want asymmetric (precise keys, compact values)? Rebuild with
 > `-DGGML_CUDA_FA_ALL_QUANTS=ON`.
+
+### ✅ We built it. The trap is a build option, not a property of the formats
+
+**[Chapter 14](14-build-experiment.md)** compiled `GGML_CUDA_FA_ALL_QUANTS=ON` and measured it
+against a control build from identical source, compiler and CUDA:
+
+| `-ctk q8_0 -ctv q4_0` | Prefill | Generation |
+| --- | --- | --- |
+| CONTROL (stock flags) | 38.9 t/s | 6.2 t/s |
+| TREATMENT (`FA_ALL_QUANTS=ON`) | **1187 t/s** | **22.0 t/s** |
+
+**×30.5 prefill, and afterwards indistinguishable from the symmetric pairs** (1178 t/s). The
+penalty is not reduced, it is gone — so on a build with this flag, asymmetric KV is *free* and
+`q8_0` keys + `q4_0` values becomes the natural 130k layout.
+
+`q5_1` and `q4_1` stop being traps on that build too: every K/V pair reports the same 147 MiB
+host compute, because all **49** kernels are compiled instead of **4**. Still unbanned rather
+than recommended — there is no quality evidence for any of them.
 
 ---
 
@@ -118,7 +136,7 @@ Question: what is the commissioning passphrase for reactor bay 7?
 
 Both retrieved it exactly. **This clears `q4_0` for retrieval-style work — it does not prove
 it lossless** for multi-step reasoning or code edits. Reproduce with
-[`scripts/needle-test.ps1`](scripts/needle-test.ps1).
+[`needle-test.ps1`](../.claude/skills/tuning-llamacpp-configs/scripts/needle-test.ps1).
 
 **Methodology trap:** the first two attempts returned *empty answers for both KV types*,
 which looked like total quality collapse. Cause: the raw `/completion` endpoint makes an
