@@ -72,3 +72,4 @@ run_utc	suite	label	status	model	ctx	npp	ntg	pp_ts	tg_ts	vram0	vram1	vram_total	
 2026-08-22T12:32:32Z	q38-ctxmax	q38-136k-q8-ub512-ts21,44	OK	Qwen3.8-27B-Q4_K_M.gguf	139264	8192	128	1215.05	22.02	7317	15441	22758	23,2	-ub 512 -ts 21,44 -ctk q8_0 -ctv q8_0 -fa on -ngl 999 -fit off -sm layer
 2026-08-22T12:32:58Z	q38-ctxmax	q38-136k-q8-ub512-ts20,45	OK	Qwen3.8-27B-Q4_K_M.gguf	139264	8192	128	1007.57	20.30	7555	15919	23474	25,5	-ub 512 -ts 20,45 -ctk q8_0 -ctv q8_0 -fa on -ngl 999 -fit off -sm layer
 2026-08-22T13:14:10Z	q38-ubcurve	q38-130k-q8-ub128-ts22,43	OK	Qwen3.8-27B-Q4_K_M.gguf	130048	8192	128	939.09	22.13	7367	14544	21911	25,1	-ub 128 -ts 22,43 -ctk q8_0 -ctv q8_0 -fa on -ngl 999 -fit off -sm layer
+2026-08-22T14:44:45Z	policy-test	POLICYTEST q8 ub512 ts20,45	OK	Qwen3.8-27B-Q4_K_M.gguf	130048	8192	128	790.05	16.78	7387	15974	23361	34,4	-ub 512 -b 2048 -ts 20,45 -ctk q8_0 -ctv q8_0 -fa on -ngl 999 -fit off
