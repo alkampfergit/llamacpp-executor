@@ -1,0 +1,87 @@
+[34m0.00.116.032[0m [32mI [0mcmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+[34m0.00.279.142[0m [35mW srv  llama_server: -----------------
+[0m[34m0.00.279.151[0m [35mW srv  llama_server: CORS is set to allow all origins ('*') and no API key is set
+[0m[34m0.00.279.151[0m [35mW srv  llama_server: this can be a security risk (cross-origin attacks)
+[0m[34m0.00.279.152[0m [35mW srv  llama_server: more info: https://github.com/ggml-org/llama.cpp/pull/25655
+[0m[34m0.00.279.152[0m [35mW srv  llama_server: -----------------
+[0m[34m0.00.284.152[0m [32mI [0msrv    load_model: loading model 'S:\HuggingFace\lmstudio\lmstudio-community\Qwen3.8-27B-GGUF\Qwen3.8-27B-Q4_K_M.gguf'
+[34m0.00.683.511[0m [35mW model has unused tensor blk.64.attn_norm.weight (size = 20480 bytes) -- ignoring
+[0m[34m0.00.683.531[0m [35mW model has unused tensor blk.64.post_attention_norm.weight (size = 20480 bytes) -- ignoring
+[0m[34m0.00.683.554[0m [35mW model has unused tensor blk.64.attn_q.weight (size = 35389440 bytes) -- ignoring
+[0m[34m0.00.683.562[0m [35mW model has unused tensor blk.64.attn_k.weight (size = 2949120 bytes) -- ignoring
+[0m[34m0.00.683.570[0m [35mW model has unused tensor blk.64.attn_v.weight (size = 4300800 bytes) -- ignoring
+[0m[34m0.00.683.599[0m [35mW model has unused tensor blk.64.attn_output.weight (size = 17694720 bytes) -- ignoring
+[0m[34m0.00.683.608[0m [35mW model has unused tensor blk.64.attn_q_norm.weight (size = 1024 bytes) -- ignoring
+[0m[34m0.00.683.616[0m [35mW model has unused tensor blk.64.attn_k_norm.weight (size = 1024 bytes) -- ignoring
+[0m[34m0.00.683.624[0m [35mW model has unused tensor blk.64.ffn_gate.weight (size = 50135040 bytes) -- ignoring
+[0m[34m0.00.683.632[0m [35mW model has unused tensor blk.64.ffn_down.weight (size = 73113600 bytes) -- ignoring
+[0m[34m0.00.683.640[0m [35mW model has unused tensor blk.64.ffn_up.weight (size = 50135040 bytes) -- ignoring
+[0m[34m0.00.683.649[0m [35mW model has unused tensor blk.64.nextn.eh_proj.weight (size = 29491200 bytes) -- ignoring
+[0m[34m0.00.683.658[0m [35mW model has unused tensor blk.64.nextn.enorm.weight (size = 20480 bytes) -- ignoring
+[0m[34m0.00.683.666[0m [35mW model has unused tensor blk.64.nextn.hnorm.weight (size = 20480 bytes) -- ignoring
+[0m[34m0.00.683.691[0m [35mW model has unused tensor blk.64.nextn.shared_head_norm.weight (size = 20480 bytes) -- ignoring
+[0m[34m0.07.811.464[0m [32mI [0mcmn          init: llama threadpool init, n_threads = 12
+[34m0.08.189.138[0m [32mI [0msrv    load_model: initializing, n_slots = 1, n_ctx_slot = 130048, kv_unified = 'false'
+[34m0.08.194.850[0m [32mI [0msrv          init: chat template supports preserving reasoning, consider enabling it via --reasoning-preserve
+[34m0.08.194.869[0m [32mI [0msrv  llama_server: model loaded
+[34m0.08.194.872[0m [32mI [0msrv  llama_server: listening on http://127.0.0.1:9077
+[34m0.10.228.014[0m [32mI [0mslot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = -1
+[34m0.10.228.214[0m [32mI [0mslot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+[34m0.13.636.819[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =   4096, progress = 0.04, t =   3.41 s / 1201.67 tokens per second
+[34m0.15.264.635[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =   6144, progress = 0.06, t =   5.04 s / 1219.92 tokens per second
+[34m0.16.940.695[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =   8192, progress = 0.08, t =   6.71 s / 1220.42 tokens per second
+[34m0.18.653.893[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  10240, progress = 0.10, t =   8.43 s / 1215.34 tokens per second
+[34m0.20.393.948[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  12288, progress = 0.11, t =  10.17 s / 1208.77 tokens per second
+[34m0.22.193.289[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  14336, progress = 0.13, t =  11.97 s / 1198.16 tokens per second
+[34m0.24.025.450[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  16384, progress = 0.15, t =  13.80 s / 1187.49 tokens per second
+[34m0.25.888.132[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  18432, progress = 0.17, t =  15.66 s / 1177.02 tokens per second
+[34m0.27.800.221[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  20480, progress = 0.19, t =  17.57 s / 1165.49 tokens per second
+[34m0.29.732.015[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  22528, progress = 0.21, t =  19.50 s / 1155.06 tokens per second
+[34m0.31.703.998[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  24576, progress = 0.23, t =  21.48 s / 1144.36 tokens per second
+[34m0.33.694.138[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  26624, progress = 0.25, t =  23.47 s / 1134.58 tokens per second
+[34m0.35.706.775[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  28672, progress = 0.27, t =  25.48 s / 1125.34 tokens per second
+[34m0.37.780.255[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  30720, progress = 0.29, t =  27.55 s / 1114.98 tokens per second
+[34m0.39.846.856[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  32768, progress = 0.30, t =  29.62 s / 1106.33 tokens per second
+[34m0.41.970.556[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  34816, progress = 0.32, t =  31.74 s / 1096.83 tokens per second
+[34m0.44.153.856[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  36864, progress = 0.34, t =  33.93 s / 1086.61 tokens per second
+[34m0.46.336.942[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  38912, progress = 0.36, t =  36.11 s / 1077.63 tokens per second
+[34m0.48.560.697[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  40960, progress = 0.38, t =  38.33 s / 1068.55 tokens per second
+[34m0.50.802.261[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  43008, progress = 0.40, t =  40.57 s / 1059.99 tokens per second
+[34m0.53.083.760[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  45056, progress = 0.42, t =  42.86 s / 1051.35 tokens per second
+[34m0.55.396.374[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  47104, progress = 0.44, t =  45.17 s / 1042.86 tokens per second
+[34m0.57.723.804[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  49152, progress = 0.46, t =  47.50 s / 1034.88 tokens per second
+[34m1.00.095.828[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  51200, progress = 0.48, t =  49.87 s / 1026.72 tokens per second
+[34m1.02.519.415[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  53248, progress = 0.49, t =  52.29 s / 1018.30 tokens per second
+[34m1.04.983.710[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  55296, progress = 0.51, t =  54.76 s / 1009.87 tokens per second
+[34m1.07.429.720[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  57344, progress = 0.53, t =  57.20 s / 1002.49 tokens per second
+[34m1.09.915.097[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  59392, progress = 0.55, t =  59.69 s / 995.06 tokens per second
+[34m1.12.436.704[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  61440, progress = 0.57, t =  62.21 s / 987.65 tokens per second
+[34m1.14.987.841[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  63488, progress = 0.59, t =  64.76 s / 980.36 tokens per second
+[34m1.17.571.353[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  65536, progress = 0.61, t =  67.34 s / 973.17 tokens per second
+[34m1.20.194.340[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  67584, progress = 0.63, t =  69.97 s / 965.95 tokens per second
+[34m1.22.856.355[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  69632, progress = 0.65, t =  72.63 s / 958.75 tokens per second
+[34m1.25.535.984[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  71680, progress = 0.67, t =  75.31 s / 951.83 tokens per second
+[34m1.28.276.076[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  73728, progress = 0.68, t =  78.05 s / 944.65 tokens per second
+[34m1.31.014.261[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  75776, progress = 0.70, t =  80.79 s / 937.98 tokens per second
+[34m1.33.831.241[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  77824, progress = 0.72, t =  83.60 s / 930.88 tokens per second
+[34m1.36.656.775[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  79872, progress = 0.74, t =  86.43 s / 924.14 tokens per second
+[34m1.39.520.825[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  81920, progress = 0.76, t =  89.29 s / 917.43 tokens per second
+[34m1.42.388.380[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  83968, progress = 0.78, t =  92.16 s / 911.11 tokens per second
+[34m1.45.323.073[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  86016, progress = 0.80, t =  95.09 s / 904.53 tokens per second
+[34m1.48.258.633[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  88064, progress = 0.82, t =  98.03 s / 898.33 tokens per second
+[34m1.51.238.925[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  90112, progress = 0.84, t = 101.01 s / 892.10 tokens per second
+[34m1.54.239.089[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  92160, progress = 0.86, t = 104.01 s / 886.06 tokens per second
+[34m1.57.278.392[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  94208, progress = 0.87, t = 107.05 s / 880.04 tokens per second
+[34m2.00.341.480[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  96256, progress = 0.89, t = 110.11 s / 874.15 tokens per second
+[34m2.03.446.236[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens =  98304, progress = 0.91, t = 113.22 s / 868.27 tokens per second
+[34m2.06.586.693[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens = 100352, progress = 0.93, t = 116.36 s / 862.44 tokens per second
+[34m2.09.771.918[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens = 102400, progress = 0.95, t = 119.54 s / 856.59 tokens per second
+[34m2.12.987.626[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens = 104448, progress = 0.97, t = 122.76 s / 850.84 tokens per second
+[34m2.16.241.220[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens = 106496, progress = 0.99, t = 126.01 s / 845.12 tokens per second
+[34m2.17.676.588[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens = 107227, progress = 1.00, t = 127.45 s / 841.34 tokens per second
+[34m2.18.727.617[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt processing, n_tokens = 107739, progress = 1.00, t = 128.50 s / 838.44 tokens per second
+[34m2.20.190.292[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt eval time =  129115.77 ms / 107743 tokens (    1.20 ms per token,   834.47 tokens per second)
+[34m2.20.190.299[0m [32mI [0mslot print_timing: id  0 | task 0 |        eval time =     846.29 ms /    13 tokens (   70.52 ms per token,    14.18 tokens per second)
+[34m2.20.190.301[0m [32mI [0mslot print_timing: id  0 | task 0 |       total time =  129962.06 ms / 107756 tokens
+[34m2.20.190.301[0m [32mI [0mslot print_timing: id  0 | task 0 |    graphs reused =         11
+[34m2.20.192.305[0m [32mI [0mslot      release: id  0 | task 0 | stop processing: n_tokens = 107755, truncated = 0

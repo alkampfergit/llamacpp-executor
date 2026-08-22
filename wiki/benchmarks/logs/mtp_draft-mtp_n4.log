@@ -1,0 +1,33 @@
+[34m0.00.106.171[0m [32mI [0mcmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+[34m0.00.226.088[0m [35mW srv  llama_server: -----------------
+[0m[34m0.00.226.095[0m [35mW srv  llama_server: CORS is set to allow all origins ('*') and no API key is set
+[0m[34m0.00.226.095[0m [35mW srv  llama_server: this can be a security risk (cross-origin attacks)
+[0m[34m0.00.226.096[0m [35mW srv  llama_server: more info: https://github.com/ggml-org/llama.cpp/pull/25655
+[0m[34m0.00.226.096[0m [35mW srv  llama_server: -----------------
+[0m[34m0.00.232.569[0m [32mI [0msrv    load_model: loading model 'S:\HuggingFace\lmstudio\lmstudio-community\Qwen3.8-27B-GGUF\Qwen3.8-27B-Q4_K_M.gguf'
+[34m0.08.084.697[0m [32mI [0mcmn          init: llama threadpool init, n_threads = 12
+[34m0.08.084.752[0m [32mI [0mcommon_speculative_init_result: creating MTP draft context against the target model 'S:\HuggingFace\lmstudio\lmstudio-community\Qwen3.8-27B-GGUF\Qwen3.8-27B-Q4_K_M.gguf'
+[34m0.08.617.029[0m [32mI [0msrv    load_model: initializing, n_slots = 1, n_ctx_slot = 65536, kv_unified = 'false'
+[34m0.08.734.615[0m [32mI [0msrv          init: chat template supports preserving reasoning, consider enabling it via --reasoning-preserve
+[34m0.08.734.636[0m [32mI [0msrv  llama_server: model loaded
+[34m0.08.734.639[0m [32mI [0msrv  llama_server: listening on http://127.0.0.1:9078
+[34m0.10.041.462[0m [32mI [0mslot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = -1
+[34m0.10.041.510[0m [32mI [0mslot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+[34m0.13.407.353[0m [32mI [0mslot print_timing: id  0 | task 0 | n_gen =    143, tg =  46.61 t/s, tg_3s =  46.94 t/s
+[34m0.16.431.068[0m [32mI [0mslot print_timing: id  0 | task 0 | n_gen =    280, tg =  45.96 t/s, tg_3s =  45.31 t/s
+[34m0.19.041.785[0m [32mI [0mslot print_timing: id  0 | task 0 | prompt eval time =     319.12 ms /    57 tokens (    5.60 ms per token,   178.62 tokens per second)
+[34m0.19.041.792[0m [32mI [0mslot print_timing: id  0 | task 0 |        eval time =    8681.06 ms /   400 tokens (   21.76 ms per token,    45.96 tokens per second)
+[34m0.19.041.793[0m [32mI [0mslot print_timing: id  0 | task 0 |       total time =    9000.18 ms /   457 tokens
+[34m0.19.041.794[0m [32mI [0mslot print_timing: id  0 | task 0 |    graphs reused =         97
+[34m0.19.041.798[0m [32mI [0mslot print_timing: id  0 | task 0 | draft acceptance = 0.75315 (  299 accepted /   397 generated), mean len =  3.99
+[34m0.19.041.841[0m [32mI [0mslot      release: id  0 | task 0 | stop processing: n_tokens = 456, truncated = 0
+[34m0.19.044.874[0m [32mI [0mslot get_availabl: id  0 | task -1 | selected slot by LCP similarity, f_sim_best = 1.000 (> 0.100 thold), f_keep = 0.125
+[34m0.19.154.275[0m [32mI [0mslot launch_slot_: id  0 | task 103 | processing task, is_child = 0
+[34m0.22.401.584[0m [32mI [0mslot print_timing: id  0 | task 103 | n_gen =    142, tg =  45.79 t/s, tg_3s =  46.11 t/s
+[34m0.25.448.562[0m [32mI [0mslot print_timing: id  0 | task 103 | n_gen =    287, tg =  46.68 t/s, tg_3s =  47.59 t/s
+[34m0.27.795.442[0m [32mI [0mslot print_timing: id  0 | task 103 | prompt eval time =     167.90 ms /     4 tokens (   41.97 ms per token,    23.82 tokens per second)
+[34m0.27.795.450[0m [32mI [0mslot print_timing: id  0 | task 103 |        eval time =    8473.17 ms /   400 tokens (   21.24 ms per token,    47.09 tokens per second)
+[34m0.27.795.451[0m [32mI [0mslot print_timing: id  0 | task 103 |       total time =    8641.07 ms /   404 tokens
+[34m0.27.795.452[0m [32mI [0mslot print_timing: id  0 | task 103 |    graphs reused =        195
+[34m0.27.795.456[0m [32mI [0mslot print_timing: id  0 | task 103 | draft acceptance = 0.73945 (  298 accepted /   403 generated), mean len =  3.95
+[34m0.27.795.490[0m [32mI [0mslot      release: id  0 | task 103 | stop processing: n_tokens = 456, truncated = 0

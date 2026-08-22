@@ -305,9 +305,16 @@ Full commands and the reasoning: [Chapter 7](07-recommended-configs.md).
 
 **Rebuild llama.cpp:**
 
+```powershell
+.\.claude\skills\building-llamacpp-cuda\scripts\build-llamacpp.ps1 `
+  -CMakeExtra '-DLLAMA_SCHED_MAX_COPIES=1','-DGGML_CUDA_FA_ALL_QUANTS=ON'
 ```
-cmake -B build -DGGML_CUDA=ON -DLLAMA_SCHED_MAX_COPIES=1 -DGGML_CUDA_FA_ALL_QUANTS=ON
-```
+
+> ⚠️ **Do not run the plain `cmake -B build -DGGML_CUDA=ON ...` from llama.cpp's docs on this
+> machine — it fails twice before building anything.** You need the **Ninja** generator inside
+> a `vcvars64.bat` session, plus `-DCMAKE_CUDA_ARCHITECTURES="86;120"` (the 5060 Ti is
+> Blackwell **12.0**, not Ada 8.9 — a prior build here used `86;89` and silently JIT-compiled
+> for the faster card). See chapter 7 §7.5 and the `building-llamacpp-cuda` skill.
 
 - `LLAMA_SCHED_MAX_COPIES=1` makes the fast non-pipelined path **deterministic** instead of a
   side effect of running out of memory — and should let `q8_0` KV run at `-ub 1024` at full

@@ -120,6 +120,11 @@ function Probe {
     if ($l -match 'out of memory')        { $status = "OOM" }
     elseif ($l -match 'failed to (load|create)') { if ($status -eq "OK") { $status = "FAIL" } }
   }
+  # A run that produced a result row SUCCEEDED, even if an allocation failed
+  # earlier and llama.cpp retried without pipeline parallelism. Marking those
+  # OOM makes consumers discard valid data -- 17 rows were mislabelled that way
+  # before this was caught by an external review of results.tsv.
+  if ($pp -ne "" -and $status -eq "OOM") { $status = "OK" }
   if ($pp -eq "" -and $status -eq "OK") { $status = "FAIL" }
 
   # Append-only: flush this single run to disk immediately.

@@ -270,8 +270,10 @@ Steps 3, 4 and 6 are counter-intuitive and are usually the answer:
 ## Standing cautions
 
 - **`GGML_SCHED_MAX_COPIES` is not a runtime environment variable.** It is a compile-time
-  `#define` (default 4). Never tell the user to `$env:`-set it, and never credit a
-  measurement to it. To control it: `cmake -B build -DGGML_CUDA=ON -DLLAMA_SCHED_MAX_COPIES=1`.
+  `#define` (default 4). Never tell the user to `$env:`-set it, and never credit a measurement
+  to it. Changing it requires rebuilding — and on Windows the plain
+  `cmake -B build -DGGML_CUDA=ON …` from llama.cpp's docs may not work. **Use the
+  `building-llamacpp-cuda` skill** rather than improvising build commands.
 - **Speculative decoding must be justified per model, never assumed.** On a sparse MoE it
   measured a **net loss** (−7% at `n-max 1`, −29% at `n-max 2`) *despite 67–72% draft
   acceptance* — each drafted token costs about a full forward pass, and a ~3 B-active model
