@@ -274,12 +274,21 @@ Steps 3, 4 and 6 are counter-intuitive and are usually the answer:
   to it. Changing it requires rebuilding — and on Windows the plain
   `cmake -B build -DGGML_CUDA=ON …` from llama.cpp's docs may not work. **Use the
   `building-llamacpp-cuda` skill** rather than improvising build commands.
-- **Speculative decoding must be justified per model, never assumed.** On a sparse MoE it
-  measured a **net loss** (−7% at `n-max 1`, −29% at `n-max 2`) *despite 67–72% draft
-  acceptance* — each drafted token costs about a full forward pass, and a ~3 B-active model
-  has nothing to amortise. **High acceptance is not a win; only end-to-end tokens/second is.**
-  Expect it to help on large dense models and to hurt on sparse MoE. `ngram-*` drafters cost
-  no VRAM and measured ~0%, so they are a safe bet but not a free win.
+- **Establish the model's class before predicting anything.** Dense vs sparse-MoE, and how many
+  layers are genuinely full-attention, decide *which knobs matter at all*. Measured on the same
+  box: a sparse 35B-A3B and a dense 27B disagreed on five of six effects, and two flipped sign.
+  Never carry a number — or a *shape* — from one model to another. See
+  `references/parameter-effects.md`.
+- **Speculative decoding must be justified per model, never assumed.** On a sparse MoE it was a
+  **net loss** (−7% at `n-max 1`, −29% at `n-max 2`) *despite 67–72% acceptance*; on a dense 27 B
+  it was **+110%** (22.4 → 47.1 t/s at `n-max 4`). Each drafted token costs roughly a full
+  forward pass, so it pays only when that pass is expensive. **High acceptance is not a win;
+  only end-to-end tokens/second is.** Also note it *costs* prefill (−27% measured) and a second
+  graph reservation (~1.1 GiB), and its gain shrinks with depth (2.0× shallow → ~1.5× at 108k).
+- **Never hardcode a layer index when checking whether the MTP head loaded.** It sits at
+  `blk.<n_layer>` — `blk.40` on one model, `blk.64` on another. Match
+  `unused tensor blk\.\d+\.nextn` instead; a hardcoded index silently reports "loaded" for every
+  run including the baseline.
 - **Commit benchmark inputs, don't just regenerate them.** A fixed long-context prompt must be
   byte-identical across configurations and machines; line-ending normalisation alone changes
   its token count. Store the artifact and mark it `-text` in `.gitattributes`.

@@ -45,6 +45,7 @@ and come back later when you want to know *why* it looks like that.
 | 7 | [Recommended configurations](07-recommended-configs.md) | Copy-paste launch commands for each goal |
 | 8 | [Troubleshooting](08-troubleshooting.md) | Slow prefill, silent OOM, gibberish output, and the Windows driver trap that ruins everything |
 | 9 | [Speculative decoding & MTP](09-speculative-decoding.md) | Making generation faster without changing the model |
+| 10 | [Qwen3.8-27B results](10-results-qwen38-27b.md) | A **dense** model on the same box — where the MoE tuning advice does and does not transfer |
 
 ---
 
@@ -115,3 +116,4 @@ Both live under `S:\HuggingFace\lmstudio\`:
 Both are `qwen35moe`: 35.5 B total parameters, ~3 B active per token, 256 experts with 8
 used per token, and a **hybrid attention design** that makes long context unusually cheap.
 Chapter 4 explains why that last point is the reason 130k context is possible at all.
+

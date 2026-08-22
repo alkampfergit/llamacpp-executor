@@ -5,8 +5,31 @@ Measured with `llama-batched-bench` (8192-token prompt) and `llama-server` over 
 (16 GiB) pair — the 5060 Ti drives the display — with a 20.2 GiB Q4_K_M MoE model
 (35.5 B total / ~3 B active, 256 experts, 8 used, hybrid attention, 40 layers + 1 MTP head).
 
-Use these as **shapes to expect**, not absolute targets. The shapes generalise; the numbers
-do not. Differences under ~8% are noise on a machine whose GPU also drives a display.
+Use these as **shapes to expect**, not absolute targets. Differences under ~8% are noise on a
+machine whose GPU also drives a display.
+
+> ## ⚠️ The shapes are MODEL-CLASS-specific. Re-measure; do not assume.
+>
+> An earlier version of this file said "the shapes generalise; the numbers do not." **That was
+> wrong.** Running the same campaign on a *dense* 27 B model (Qwen3.8-27B-Q4_K_M, 64 layers +
+> MTP head) on the same box contradicted **five** of the findings below:
+>
+> | Finding from the MoE | On the dense 27 B |
+> | --- | --- |
+> | KV cache is ~4× *smaller* than the naive formula | **3× LARGER than the MoE's.** 16 full-attention layers at `n_embd_k_gqa=1024` = 64 MiB f16 per 1024 tokens → f16 at 130k needs **8128 MiB** and is impossible; f16 caps at ~72k |
+> | `-ub` is the dominant prefill knob (1368→2651) | **Flat**: 1141–1222 across 256→2048. Only 128 costs anything (−22%) |
+> | `q4_0` KV is *faster* (frees headroom for a bigger `-ub`) | **Not faster**: 1187 vs 1208. It buys 2032 MiB and nothing else |
+> | Non-pipelined fallback: +43% prefill | **0%** (1208 vs 1219) — though still worth 422 MiB of compute buffer |
+> | Context taxes prefill (−31% at 130k) | **No tax**: 1208 t/s at 130k vs 1202 at 8k |
+> | `draft-mtp`: −7% to −29% | **+110%** (22.4 → 47.1 t/s at `n-max 4`) |
+>
+> The one thing that did transfer: **the *method*.** Predict → measure at the real `-c` → one
+> fresh process per point → quality-gate → grep the logs. Every specific number needed
+> re-measuring, and the *sign* of two effects flipped.
+>
+> **So: treat this file as a worked example, not a lookup table.** Establish the model's class
+> first — dense vs sparse-MoE, and how many layers are genuinely full-attention — because that
+> is what decides which knobs matter.
 
 ## Contents
 
