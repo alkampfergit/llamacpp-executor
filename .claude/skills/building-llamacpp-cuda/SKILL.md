@@ -33,9 +33,9 @@ are documented with their exact error text in
 Use the bundled script. It encodes the working combination and validates each step:
 
 ```powershell
-./scripts/build-llamacpp.ps1
-./scripts/build-llamacpp.ps1 -CMakeExtra '-DGGML_CUDA_FA_ALL_QUANTS=ON','-DGGML_SCHED_MAX_COPIES=1'
-./scripts/build-llamacpp.ps1 -Repo S:/Develop/somewhere/llama.cpp -Targets llama-server
+./.claude/skills/building-llamacpp-cuda/scripts/build-llamacpp.ps1
+./.claude/skills/building-llamacpp-cuda/scripts/build-llamacpp.ps1 -CMakeExtra '-DGGML_CUDA_FA_ALL_QUANTS=ON','-DGGML_SCHED_MAX_COPIES=1'
+./.claude/skills/building-llamacpp-cuda/scripts/build-llamacpp.ps1 -Repo S:/Develop/somewhere/llama.cpp -Targets llama-server
 ```
 
 **Run it; do not read it and hand-type the steps.** The ordering, the single-process
@@ -159,6 +159,52 @@ a large volume of `warning #177-D` / `#221-D` from CUDA template instantiation.
 
 ---
 
+## 6b. Four traps the script now handles for you
+
+Each of these cost a real build or a wrong conclusion. They are handled automatically, but know
+they exist so you recognise the symptoms.
+
+**`GGML_*` not `LLAMA_*`.** `-DLLAMA_SCHED_MAX_COPIES=1` is **not an option** — the real name is
+`GGML_SCHED_MAX_COPIES` and the `LLAMA_` spelling is not forwarded. CMake treats an unrecognised
+`-D` as a *warning*, compiles with the default, and exits 0. A mistyped flag therefore costs a
+full build and silently changes nothing. The script greps for
+`Manually-specified variables were not used by the project` and prints a red block.
+
+**The CUDA toolkit must be pinned, not inherited.** A newer toolkit can be installed and still
+lose, because `CUDA_PATH` and the leading PATH entry live in the *user registry* and are written
+by whichever installer ran last. CMake resolves nvcc from `$ENV{CUDA_PATH}/bin` then PATH. The
+script picks the newest installed toolkit (numeric version sort — a string sort puts `v13.1`
+after `v13.3`), announces it, warns when it is overriding, and pins it inside the generated
+`.bat`. Override with `-CudaToolkit`.
+
+**Run new binaries from their own `bin/`.** ggml resolves backend DLLs relative to the working
+directory. Observed: a fresh build loaded `ggml-rpc.dll` and `ggml-cpu-haswell.dll` from the
+**baseline** folder, because those filenames differ from the new build's `ggml-cpu.dll`. A
+benchmark run that way silently mixes two builds. The smoke test now runs from `bin/` and warns
+if any backend resolves from outside it.
+
+**`--version` is not a health check.** `llama-bench` has no `--version` at all, and
+`llama-server --version` exits *before* backends initialise, so it never lists devices. Use
+`--version` for build/commit provenance and `--list-devices` for hardware. And keep diagnostics
+out of the exit code: an invalid probe flag once made a successful build report failure.
+
+## 6c. Provenance: every build gets a pushed branch
+
+Before configuring, the script creates `build/<timestamp>-<label>` in the submodule, writes
+`PROVENANCE.md` (base commit, flags, archs, host compiler, CUDA toolkit, GPUs), commits it, and
+pushes to the fork. `-Label` names it; `-NoProvenance` skips it for throwaway builds.
+
+Always a **new branch, never `master`** — `master` must stay a clean mirror so
+`git rebase upstream/master` keeps working.
+
+> **Do not name the manifest `BUILD-*`.** llama.cpp's `.gitignore` contains `/build*`, and
+> Windows git matches ignore patterns **case-insensitively**, so `BUILD-PROVENANCE.md` was
+> silently swallowed by a rule meant for the `build/` directory. The branch pushed with no
+> record of the flags at all. `git check-ignore -v <file>` names the offending line.
+
+Moving the submodule onto a build branch changes the **parent** repo's gitlink. Mention it;
+don't commit it silently.
+
 ## 7. Standing rules
 
 ### 🚫 Never touch the baseline binaries
@@ -206,5 +252,6 @@ numbers. Report the build with every result — `llama-server.exe --version` pri
 
 - `scripts/build-llamacpp.ps1` — detects vcvars/ninja/CUDA arch, configures with Ninja inside
   the VS environment, builds, then smoke-tests the result. **Run it, don't read it.**
+
 
 

@@ -23,18 +23,18 @@ explanation, a critique, a drafting task, a sanity check. Codex can also read th
 while answering, so "look at X and tell me Y" works without pasting files.
 
 ```powershell
-./scripts/ask-codex.ps1 "Why would a CUDA kernel be slower with a larger batch?"
-./scripts/ask-codex.ps1 -Prompt "Read wiki/06-results.md and tell me which claim is weakest"
-./scripts/ask-codex.ps1 -PromptFile brief.md -Model gpt-5.6-sol -Effort high
-./scripts/ask-codex.ps1 "Explain this error: <paste>" -Model gpt-5.6-luna -Effort low
+./.claude/skills/asking-codex/scripts/ask-codex.ps1 "Why would a CUDA kernel be slower with a larger batch?"
+./.claude/skills/asking-codex/scripts/ask-codex.ps1 -Prompt "Read wiki/06-results.md and tell me which claim is weakest"
+./.claude/skills/asking-codex/scripts/ask-codex.ps1 -PromptFile brief.md -Model gpt-5.6-sol -Effort high
+./.claude/skills/asking-codex/scripts/ask-codex.ps1 "Explain this error: <paste>" -Model gpt-5.6-luna -Effort low
 ```
 
 **Mode B — native code review.** A thin convenience wrapper over `codex exec review` when the
 thing you want reviewed is a diff. See §5.
 
 ```powershell
-./scripts/ask-codex.ps1 -Review -Uncommitted
-./scripts/ask-codex.ps1 -Review -Base main
+./.claude/skills/asking-codex/scripts/ask-codex.ps1 -Review -Uncommitted
+./.claude/skills/asking-codex/scripts/ask-codex.ps1 -Review -Base main
 ```
 
 Mode A is not a lesser path — it is plain `codex exec`, which is *more* capable than review mode
@@ -133,7 +133,7 @@ belongs in `-PromptFile`.
 enforce it with a JSON Schema:
 
 ```powershell
-./scripts/ask-codex.ps1 -PromptFile q.md -OutputSchema schema.json
+./.claude/skills/asking-codex/scripts/ask-codex.ps1 -PromptFile q.md -OutputSchema schema.json
 ```
 
 **Decide whether it should see the repo.** Under `read-only` Codex can read any file in the
@@ -141,7 +141,7 @@ working directory, which is what makes "read X and tell me Y" work. For a pure k
 question with no repo exposure, point it somewhere empty:
 
 ```powershell
-./scripts/ask-codex.ps1 "Explain CUDA occupancy vs latency hiding" -Isolated
+./.claude/skills/asking-codex/scripts/ask-codex.ps1 "Explain CUDA occupancy vs latency hiding" -Isolated
 ```
 
 `-Isolated` runs in a scratch directory with `--skip-git-repo-check`, so nothing from this repo
@@ -244,4 +244,5 @@ Full flag catalogue and the model table: [`references/codex-cli-reference.md`](r
 `scripts/ask-codex.ps1` — writes the prompt to a temp file, pipes it on stdin, captures the
 result via `-o`, enforces a real timeout, and fails loudly when no output is produced.
 **Run it; do not read it and retype the steps.**
+
 

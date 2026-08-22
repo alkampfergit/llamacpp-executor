@@ -61,6 +61,27 @@ Tell the user to set:
 Until this is set, **every measurement is suspect**, because a slow result is
 indistinguishable from an overflowing one. Say so plainly rather than tuning around it.
 
+> ### ⚠️ The policy is per-EXECUTABLE-PATH, so "it's set" is not enough
+> Setting it for `llama-server.exe` does **nothing** for `llama-batched-bench.exe`, which is the
+> binary that produces almost all throughput numbers. Measured proof: a policy set two hours
+> before a campaign, and every run in that campaign still spilled silently — prefill sliding
+> 1219 → 943 → 790 t/s as free VRAM shrank, with the driver never refusing an allocation.
+>
+> **Verify per binary, don't assume.** Ask for slightly too much and check that it now *fails*:
+> a clean `cudaMalloc failed: out of memory` means covered; ~800–950 t/s with no error in the
+> log means still spilling. Global Settings covers everything, including future build paths.
+>
+> A freshly compiled binary is a **new path** and starts uncovered.
+
+**If you are measuring a self-compiled build**, two more preconditions:
+
+- **Run it from its own `bin/`.** ggml resolves backend DLLs relative to the working directory,
+  so a new binary launched elsewhere can load backends belonging to a *different* build. Seen
+  for real: a fresh build pulled `ggml-cpu-haswell.dll` out of the baseline folder because its
+  own file is named `ggml-cpu.dll`.
+- **Label every number with the build that produced it**, and compare a rebuild against a
+  CONTROL rebuild rather than against shipped binaries, which differ in source and compiler too.
+
 Then note what is holding VRAM:
 
 ```powershell
@@ -90,7 +111,7 @@ Measure it in step 3 instead.
 Use it to build the memory model and to eliminate candidates.
 
 ```powershell
-./scripts/vram-budget.ps1 -Model <model.gguf>
+./.claude/skills/tuning-llamacpp-configs/scripts/vram-budget.ps1 -Model <model.gguf>
 ```
 
 That script discovers per-GPU free VRAM, sweeps `-c` × `-ub`, and prints which
@@ -124,7 +145,7 @@ Constrain hard before spending GPU time:
 ### 5. Measure at the real context size
 
 ```powershell
-. ./scripts/bench-harness.ps1
+. ./.claude/skills/tuning-llamacpp-configs/scripts/bench-harness.ps1
 Probe "ub512 ts12,29" @('-ub','512','-ts','12,29','-ctk','q8_0','-ctv','q8_0',
                         '-fa','on','-ngl','999','-fit','off') -Ctx 130048 -Npp '8192'
 ```
@@ -184,8 +205,8 @@ started losing the middle of long documents. Never adopt a lossy KV setting on s
 alone.
 
 ```powershell
-./scripts/needle-test.ps1 -Model <model.gguf> -Label q8 -Ctk q8_0 -Ctv q8_0 -Ub 512
-./scripts/needle-test.ps1 -Model <model.gguf> -Label q4 -Ctk q4_0 -Ctv q4_0 -Ub 1024
+./.claude/skills/tuning-llamacpp-configs/scripts/needle-test.ps1 -Model <model.gguf> -Label q8 -Ctk q8_0 -Ctv q8_0 -Ub 512
+./.claude/skills/tuning-llamacpp-configs/scripts/needle-test.ps1 -Model <model.gguf> -Label q4 -Ctk q4_0 -Ctv q4_0 -Ub 1024
 ```
 
 It hides one unguessable fact at the *start* of a ~108k-token monotonous document and asks
@@ -213,7 +234,7 @@ it needs `llama-server` over HTTP with a **generation-heavy** request — short 
 output — since it never accelerates prefill.
 
 ```powershell
-./scripts/mtp-test.ps1 -Model <model.gguf>       # baseline, then draft-mtp n-max 1..6
+./.claude/skills/tuning-llamacpp-configs/scripts/mtp-test.ps1 -Model <model.gguf>       # baseline, then draft-mtp n-max 1..6
 ```
 
 Judge it on **end-to-end tokens/second versus a no-drafting baseline on the same prompt.**
@@ -330,4 +351,8 @@ Load only what the current question needs.
 
 Requires: llama.cpp CUDA build with `llama-fit-params.exe`, `llama-batched-bench.exe` and
 `llama-server.exe`; `nvidia-smi` on PATH; PowerShell 7+.
+
+
+
+
 
