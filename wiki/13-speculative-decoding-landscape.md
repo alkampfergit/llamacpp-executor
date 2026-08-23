@@ -595,7 +595,7 @@ have it.
 ## 13.10 The experiment queue
 
 Ordered by value per minute. Everything in the first group runs today on the baseline binaries
-in `S:\OneDrive\Tools\llamacpp\` with nothing downloaded and nothing built.
+in `S:\OsDevelop\llamacpp\` with nothing downloaded and nothing built.
 
 ### Today — no download, no rebuild
 

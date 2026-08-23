@@ -458,10 +458,10 @@ not, so the flag is far cheaper to try than this wiki previously assumed.
 Then, per build, from the binary's own `bin/`:
 
 ```powershell
-$bin = 'S:\OneDrive\Tools\llamacpp\llama.cpp\build-fa\bin'
+$bin = 'S:\OsDevelop\llamacpp\llama.cpp\build-fa\bin'
 Set-Location $bin
-. 'S:\OneDrive\Tools\llamacpp\.claude\skills\tuning-llamacpp-configs\scripts\bench-harness.ps1' `
-    -Model <model.gguf> -LlamaDir $bin -OutDir 'S:\OneDrive\Tools\llamacpp\wiki\benchmarks\build-experiment'
+. 'S:\OsDevelop\llamacpp\.claude\skills\tuning-llamacpp-configs\scripts\bench-harness.ps1' `
+    -Model <model.gguf> -LlamaDir $bin -OutDir 'S:\OsDevelop\llamacpp\wiki\benchmarks\build-experiment'
 Probe 'fa-q8q4' @('-ub','512','-ts','21,44','-ctk','q8_0','-ctv','q4_0',
                   '-fa','on','-ngl','999','-fit','off') -Ctx 130048 -Npp '8192'
 ```

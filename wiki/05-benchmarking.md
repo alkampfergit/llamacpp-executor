@@ -203,9 +203,9 @@ default writes results to `bench-results/`; pass `-OutDir` to keep this repo's o
 `wiki/benchmarks/` instead:
 
 ```powershell
-. "S:\OneDrive\Tools\llamacpp\.claude\skills\tuning-llamacpp-configs\scripts\bench-harness.ps1" `
+. "S:\OsDevelop\llamacpp\.claude\skills\tuning-llamacpp-configs\scripts\bench-harness.ps1" `
   -Model "S:\HuggingFace\lmstudio\Jackrong\Qwopus3.6-35B-A3B-Coder-MTP-GGUF\Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf" `
-  -OutDir "S:\OneDrive\Tools\llamacpp\wiki\benchmarks"
+  -OutDir "S:\OsDevelop\llamacpp\wiki\benchmarks"
 
 $common = @("-fa","on","-ngl","999","-fit","off","-ts","12,29","-ctk","q8_0","-ctv","q8_0")
 foreach ($u in 256,512,1024) {
@@ -283,7 +283,7 @@ portable default of `bench-results/`:
 
 ```powershell
 $model = "S:\HuggingFace\lmstudio\Jackrong\Qwopus3.6-35B-A3B-Coder-MTP-GGUF\Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf"
-$outDir = "S:\OneDrive\Tools\llamacpp\wiki\benchmarks"
+$outDir = "S:\OsDevelop\llamacpp\wiki\benchmarks"
 .\.claude\skills\tuning-llamacpp-configs\scripts\needle-test.ps1 -Label q8-130k -Ctk q8_0 -Ctv q8_0 -Ub 512 -Model $model -OutDir $outDir
 .\.claude\skills\tuning-llamacpp-configs\scripts\needle-test.ps1 -Label q4-130k -Ctk q4_0 -Ctv q4_0 -Ub 1024 -Model $model -OutDir $outDir
 ```

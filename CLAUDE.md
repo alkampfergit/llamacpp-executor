@@ -33,7 +33,7 @@ Stale source explains nothing about a binary built from a newer tree. Before inv
 fetch and rebase:
 
 ```powershell
-cd S:\OneDrive\Tools\llamacpp\llama.cpp
+cd S:\OsDevelop\llamacpp\llama.cpp
 git fetch upstream
 git rebase upstream/master          # NOTE: master, not main
 ```
@@ -53,7 +53,7 @@ git rebase upstream/master          # NOTE: master, not main
 
 ## NEVER modify the executables in the root
 
-The `*.exe` and `*.dll` in `S:\OneDrive\Tools\llamacpp\` are the **baseline** — build
+The `*.exe` and `*.dll` in `S:\OsDevelop\llamacpp\` are the **baseline** — build
 `fe8156f78 (10509)`. They are immutable.
 
 - **Never** overwrite, replace, delete, or copy over them.
@@ -67,8 +67,8 @@ run would no longer be comparable to an earlier one and nothing in the data woul
 directory:
 
 ```
-S:\OneDrive\Tools\llamacpp\llama.cpp\build\bin\        <- new builds run from HERE
-S:\OneDrive\Tools\llamacpp\*.exe                        <- baseline, never touched
+S:\OsDevelop\llamacpp\llama.cpp\build\bin\        <- new builds run from HERE
+S:\OsDevelop\llamacpp\*.exe                        <- baseline, never touched
 ```
 
 Ninja is single-config, so binaries land flat in `build\bin\` — there is no `build\bin\Release\`.
@@ -97,7 +97,7 @@ from the script's own path, and results default to `bench-results/` next to the 
 rather than `wiki/benchmarks/`. That default is right for a copy run from an arbitrary
 location, but **it is not this repo's own workflow** — `wiki/benchmarks/` is the durable,
 committed evidence trail (see Conventions below). All three accept `-OutDir` to override the
-default; pass `-OutDir S:\OneDrive\Tools\llamacpp\wiki\benchmarks` whenever a run in *this*
+default; pass `-OutDir S:\OsDevelop\llamacpp\wiki\benchmarks` whenever a run in *this*
 repo should land in the wiki's evidence trail instead of `bench-results/`. Don't let evidence
 start landing in the portable default silently — say where it went. (`resume-benchmarks.ps1`
 already defaults `-Model`/`-OutDir` to this repo's own values; the `serve-*.ps1` and

@@ -260,6 +260,23 @@ if (Test-Path $cache) {
     Remove-Item $bd -Recurse -Force
   }
 }
+# A CMakeCache.txt records the ABSOLUTE path it was generated in. Move or rename the
+# folder and CMake aborts with "is different than the directory ... where CMakeCache.txt
+# was created" -- it will not re-root an existing cache. This bit when the whole repo moved
+# from S:\OneDrive\Tools\llamacpp to S:\OsDevelop\llamacpp: build-control/ and build-fa/
+# both still pointed at the old root. A wipe is the only fix, so do it automatically
+# rather than failing with CMake's wording.
+if (Test-Path $cache) {
+  $cachedDir = (Select-String -Path $cache -Pattern '^CMAKE_CACHEFILE_DIR:INTERNAL=(.*)$').Matches.Groups[1].Value
+  if ($cachedDir) {
+    $want = ([IO.Path]::GetFullPath($bd)).TrimEnd('\')
+    $have = ([IO.Path]::GetFullPath($cachedDir.Replace('/','\'))).TrimEnd('\')
+    if ($have -ne $want) {
+      Step "Build dir was configured at '$have' but is now '$want' -- wiping (CMake cannot re-root a cache)"
+      Remove-Item $bd -Recurse -Force
+    }
+  }
+}
 
 # --- 4b. provenance: branch + commit + push BEFORE compiling -------------
 # Every build gets a named, pushed ref on the fork recording exactly what

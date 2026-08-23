@@ -161,9 +161,9 @@ Deliberately **not** passed, and why:
   had to be forced rather than inherited). Confirmed in the control build log:
   `The CUDA compiler identification is NVIDIA 13.3.73`. CUDA is no longer a confound, and a
   slowdown must not be attributed to it.
-- **Disk and OneDrive.** Two CUDA build trees are several GB each. `build*/` is gitignored, but
-  this folder is inside OneDrive, which will try to sync every object file. Consider pausing
-  sync, or building outside OneDrive entirely.
+- ~~Disk and OneDrive~~ — **RESOLVED by relocation.** Two CUDA build trees are still several GB
+  each and `build*/` is still gitignored, but the repo now lives at `S:\OsDevelop\llamacpp`,
+  outside OneDrive, so no sync client tries to upload every object file. Nothing to pause.
 - **Compile time.** `FA_ALL_QUANTS` × 2 architectures is the dominant cost. Expect this to be
   the long pole; the control build is much faster.
 - **The baseline stays untouched.** Per `CLAUDE.md`, new binaries run from

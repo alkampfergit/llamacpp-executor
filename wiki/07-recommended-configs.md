@@ -48,7 +48,7 @@ Do you need the full 130k window?
 **Gives up:** 30% of prefill versus Profile B.
 
 ```powershell
-cd S:\OneDrive\Tools\llamacpp
+cd S:\OsDevelop\llamacpp
 
 .\llama-server.exe `
   -m "S:\HuggingFace\lmstudio\Jackrong\Qwopus3.6-35B-A3B-Coder-MTP-GGUF\Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf" `
@@ -83,7 +83,7 @@ Profile A. Needle test: **PASS**.
 reasoning or code-edit fidelity (§6.4).
 
 ```powershell
-cd S:\OneDrive\Tools\llamacpp
+cd S:\OsDevelop\llamacpp
 
 .\llama-server.exe `
   -m "S:\HuggingFace\lmstudio\Jackrong\Qwopus3.6-35B-A3B-Coder-MTP-GGUF\Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf" `
@@ -114,7 +114,7 @@ found**, and faster than Profile B's `q4_0` at `ub 512`.
 **Gives up:** 3072 tokens of context (2.4%).
 
 ```powershell
-cd S:\OneDrive\Tools\llamacpp
+cd S:\OsDevelop\llamacpp
 
 .\llama-server.exe `
   -m "S:\HuggingFace\lmstudio\Jackrong\Qwopus3.6-35B-A3B-Coder-MTP-GGUF\Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf" `
@@ -144,7 +144,7 @@ spare, so `f16` KV and `-ub 512` both fit.
 **Gives up:** Q3 quality, and ~20% generation speed versus Q4_K_M (117 → 94 t/s).
 
 ```powershell
-cd S:\OneDrive\Tools\llamacpp
+cd S:\OsDevelop\llamacpp
 
 .\llama-server.exe `
   -m "S:\HuggingFace\lmstudio\unsloth\Qwen3.6-35B-A3B-GGUF\Qwen3.6-35B-A3B-UD-Q3_K_XL.gguf" `
@@ -199,7 +199,7 @@ for the 5060 Ti (Blackwell, *not* `89`/Ada):
 ```bat
 @echo off
 call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-cd /d S:\OneDrive\Tools\llamacpp\llama.cpp
+cd /d S:\OsDevelop\llamacpp\llama.cpp
 cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON ^
       -DCMAKE_CUDA_ARCHITECTURES="86;120" ^
       -DGGML_SCHED_MAX_COPIES=1 -DGGML_CUDA_FA_ALL_QUANTS=ON
@@ -282,7 +282,7 @@ Finally, to confirm long-context quality on your own settings (`-Model` is manda
 ```powershell
 .\.claude\skills\tuning-llamacpp-configs\scripts\needle-test.ps1 -Label mine -Ctk q8_0 -Ctv q8_0 -Ub 512 `
   -Model "S:\HuggingFace\lmstudio\Jackrong\Qwopus3.6-35B-A3B-Coder-MTP-GGUF\Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf" `
-  -OutDir "S:\OneDrive\Tools\llamacpp\wiki\benchmarks"
+  -OutDir "S:\OsDevelop\llamacpp\wiki\benchmarks"
 ```
 
 ---

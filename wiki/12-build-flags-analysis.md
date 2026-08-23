@@ -78,7 +78,7 @@ anything. `cuobjdump` will tell you exactly which architectures a CUDA binary ca
 
 ```powershell
 & "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.1\bin\cuobjdump.exe" `
-    --list-elf S:\OneDrive\Tools\llamacpp\ggml-cuda.dll
+    --list-elf S:\OsDevelop\llamacpp\ggml-cuda.dll
 ```
 
 Run against the **baseline** `ggml-cuda.dll` (135.3 MB, build `10509`):

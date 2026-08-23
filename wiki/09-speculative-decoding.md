@@ -233,7 +233,7 @@ prompts.
 
 ```powershell
 # Launch with a drafter
-cd S:\OneDrive\Tools\llamacpp
+cd S:\OsDevelop\llamacpp
 .\llama-server.exe `
   -m "S:\HuggingFace\lmstudio\Jackrong\Qwopus3.6-35B-A3B-Coder-MTP-GGUF\Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf" `
   --host 0.0.0.0 --port 9010 -c 98304 -np 1 `

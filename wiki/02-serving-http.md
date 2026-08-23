@@ -11,7 +11,7 @@ time and explain what each buys you.
 Open PowerShell in the llama.cpp folder and run:
 
 ```powershell
-cd S:\OneDrive\Tools\llamacpp
+cd S:\OsDevelop\llamacpp
 
 .\llama-server.exe -m "S:\HuggingFace\lmstudio\unsloth\Qwen3.6-35B-A3B-GGUF\Qwen3.6-35B-A3B-UD-Q3_K_XL.gguf"
 ```
@@ -256,7 +256,7 @@ Putting the chapter together — this is a complete, sensible server for a singl
 assistant. Chapter 7 has the tuned per-model variants; this one is the *shape* to remember.
 
 ```powershell
-cd S:\OneDrive\Tools\llamacpp
+cd S:\OsDevelop\llamacpp
 
 .\llama-server.exe `
   -m "S:\HuggingFace\lmstudio\unsloth\Qwen3.6-35B-A3B-GGUF\Qwen3.6-35B-A3B-UD-Q3_K_XL.gguf" `
@@ -320,9 +320,9 @@ $args = @(
   '-c','130048','-np','1','-ngl','999','-sm','layer','-ts','12,29',
   '-fa','on','-b','2048','-ub','512','-ctk','q8_0','-ctv','q8_0'
 )
-Start-Process -FilePath 'S:\OneDrive\Tools\llamacpp\llama-server.exe' `
+Start-Process -FilePath 'S:\OsDevelop\llamacpp\llama-server.exe' `
   -ArgumentList $args -WindowStyle Hidden `
-  -RedirectStandardError 'S:\OneDrive\Tools\llamacpp\wiki\benchmarks\server.log'
+  -RedirectStandardError 'S:\OsDevelop\llamacpp\wiki\benchmarks\server.log'
 ```
 
 **Keep that log.** It is where `f_sim_best`, prefill timings, and OOM warnings appear, and

@@ -20,8 +20,20 @@ param(
   [ValidateSet('all','split','deep','loadmode')]
   [string] $Only   = 'all',
   [string] $Model  = 'S:\HuggingFace\lmstudio\Jackrong\Qwopus3.6-35B-A3B-Coder-MTP-GGUF\Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf',
-  [string] $OutDir = 'S:\OneDrive\Tools\llamacpp\wiki\benchmarks'
+  [string] $OutDir
 )
+
+# Default -OutDir to this repo's own evidence trail, wiki/benchmarks/, located by walking
+# up from this script to the folder holding llama-server.exe. Self-locating so moving the
+# folder needs no edit here; pass -OutDir to send a run somewhere else.
+if (-not $OutDir) {
+  $repoRoot = $PSScriptRoot
+  while ($repoRoot -and -not (Test-Path (Join-Path $repoRoot 'llama-server.exe'))) {
+    $repoRoot = Split-Path $repoRoot -Parent
+  }
+  if (-not $repoRoot) { throw "Could not locate the repo root above $PSScriptRoot. Pass -OutDir explicitly." }
+  $OutDir = Join-Path $repoRoot 'wiki\benchmarks'
+}
 
 # bench-harness.ps1 is the single source of truth and lives alongside this script under
 # .claude/skills/tuning-llamacpp-configs/scripts/ (see CLAUDE.md). Its portable default

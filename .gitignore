@@ -72,8 +72,10 @@ wiki/benchmarks/server.log
 bench-results/
 
 # ---------------------------------------------------------------------------
-#  Windows / OneDrive cruft. This folder lives inside OneDrive, which drops
-#  desktop.ini files around and creates conflicted copies.
+#  Windows cruft. This folder USED to live inside OneDrive, which dropped
+#  desktop.ini files around and created conflicted copies. It now lives at
+#  S:\OsDevelop\llamacpp, outside any sync root -- the rules are kept anyway:
+#  harmless, and they still apply if it is ever copied back under one.
 # ---------------------------------------------------------------------------
 desktop.ini
 Thumbs.db

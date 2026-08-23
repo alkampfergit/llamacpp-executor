@@ -25,7 +25,12 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$LC    = 'S:\OneDrive\Tools\llamacpp'
+# Repo root = the folder holding llama-server.exe, found by walking up from this
+# script under .claude/skills/tuning-llamacpp-configs/scripts/. Self-locating (the
+# same idiom bench-harness.ps1 uses) so moving the folder needs no edit here.
+$LC = $PSScriptRoot
+while ($LC -and -not (Test-Path (Join-Path $LC 'llama-server.exe'))) { $LC = Split-Path $LC -Parent }
+if (-not $LC) { throw "llama-server.exe not found in any parent of $PSScriptRoot" }
 $Model = 'S:\HuggingFace\lmstudio\lmstudio-community\Qwen3.8-27B-GGUF\Qwen3.8-27B-Q4_K_M.gguf'
 if (-not (Test-Path $Model)) { throw "Model not found: $Model" }
 

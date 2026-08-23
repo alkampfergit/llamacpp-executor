@@ -35,12 +35,12 @@ Add all six. `llama-batched-bench.exe` is the one that produced all 73 recorded 
 measurements, and it was the one missing.
 
 ```
-S:\OneDrive\Tools\llamacpp\llama-server.exe
-S:\OneDrive\Tools\llamacpp\llama-batched-bench.exe
-S:\OneDrive\Tools\llamacpp\llama-bench.exe
-S:\OneDrive\Tools\llamacpp\llama-cli.exe
-S:\OneDrive\Tools\llamacpp\llama-perplexity.exe
-S:\OneDrive\Tools\llamacpp\llama-completion.exe
+S:\OsDevelop\llamacpp\llama-server.exe
+S:\OsDevelop\llamacpp\llama-batched-bench.exe
+S:\OsDevelop\llamacpp\llama-bench.exe
+S:\OsDevelop\llamacpp\llama-cli.exe
+S:\OsDevelop\llamacpp\llama-perplexity.exe
+S:\OsDevelop\llamacpp\llama-completion.exe
 ```
 
 | Executable | Why it matters |
@@ -55,11 +55,11 @@ S:\OneDrive\Tools\llamacpp\llama-completion.exe
 ## 2. Worth adding — allocate VRAM in some modes
 
 ```
-S:\OneDrive\Tools\llamacpp\llama-imatrix.exe
-S:\OneDrive\Tools\llamacpp\llama-mtmd-cli.exe
-S:\OneDrive\Tools\llamacpp\llama-tts.exe
-S:\OneDrive\Tools\llamacpp\llama.exe
-S:\OneDrive\Tools\llamacpp\ggml-rpc-server.exe
+S:\OsDevelop\llamacpp\llama-imatrix.exe
+S:\OsDevelop\llamacpp\llama-mtmd-cli.exe
+S:\OsDevelop\llamacpp\llama-tts.exe
+S:\OsDevelop\llamacpp\llama.exe
+S:\OsDevelop\llamacpp\ggml-rpc-server.exe
 ```
 
 ## 3. Not needed — no meaningful GPU allocation
@@ -79,10 +79,10 @@ A rebuild does not inherit the setting. Per `CLAUDE.md` the baseline binaries ar
 overwritten, so a new build lands somewhere new — and starts out unprotected:
 
 ```
-S:\OneDrive\Tools\llamacpp\llama.cpp\build\bin\llama-server.exe
-S:\OneDrive\Tools\llamacpp\llama.cpp\build\bin\llama-batched-bench.exe
-S:\OneDrive\Tools\llamacpp\llama.cpp\build-control\bin\...
-S:\OneDrive\Tools\llamacpp\llama.cpp\build-fa\bin\...
+S:\OsDevelop\llamacpp\llama.cpp\build\bin\llama-server.exe
+S:\OsDevelop\llamacpp\llama.cpp\build\bin\llama-batched-bench.exe
+S:\OsDevelop\llamacpp\llama.cpp\build-control\bin\...
+S:\OsDevelop\llamacpp\llama.cpp\build-fa\bin\...
 ```
 
 **Add the new paths before benchmarking a fresh build**, or the first comparison against the
@@ -115,7 +115,7 @@ fail instead of running slowly — which for anything you actually care about is
 Deliberately ask for slightly too much and check that it now **fails** instead of getting slow:
 
 ```powershell
-cd S:\OneDrive\Tools\llamacpp
+cd S:\OsDevelop\llamacpp
 . .\.claude\skills\tuning-llamacpp-configs\scripts\bench-harness.ps1 -OutDir wiki\benchmarks
 Probe "policycheck" @('-ub','512','-ts','20,45','-ctk','q8_0','-ctv','q8_0',
                       '-fa','on','-ngl','999','-fit','off') `
