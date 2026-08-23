@@ -189,6 +189,13 @@ That instantiates the full quantised-FA matrix, making `-ctk q8_0 -ctv q4_0` fas
 attractive layout for a 130k window, since it protects the keys and shrinks the values. Cost:
 a long compile and a much larger CUDA binary.
 
+**This has now been built and measured** — [chapter 14](14-build-experiment.md). Asymmetric
+`q8_0`/`q4_0` went from 38.9 to 1187 t/s prefill (**×30.5**) and became indistinguishable from
+the symmetric pairs, so the rule above ("use a symmetric pair from the compiled set") is a
+statement about the *default build*, not about the formats. On that build `q5_1` and `q4_1`
+also stop falling off the fast path, because all 49 kernels are compiled instead of 4. The
+real cost turned out to be 10.4 min of compile and `ggml-cuda.dll` growing 84.2 -> 116.2 MB.
+
 ---
 
 ## 3.3 Batching — the compute/memory dial

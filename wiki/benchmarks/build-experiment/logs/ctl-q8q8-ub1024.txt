@@ -1,0 +1,26 @@
+0.00.580.222 W model has unused tensor blk.64.attn_norm.weight (size = 20480 bytes) -- ignoring
+0.00.580.241 W model has unused tensor blk.64.post_attention_norm.weight (size = 20480 bytes) -- ignoring
+0.00.580.263 W model has unused tensor blk.64.attn_q.weight (size = 35389440 bytes) -- ignoring
+0.00.580.271 W model has unused tensor blk.64.attn_k.weight (size = 2949120 bytes) -- ignoring
+0.00.580.279 W model has unused tensor blk.64.attn_v.weight (size = 4300800 bytes) -- ignoring
+0.00.580.310 W model has unused tensor blk.64.attn_output.weight (size = 17694720 bytes) -- ignoring
+0.00.580.325 W model has unused tensor blk.64.attn_q_norm.weight (size = 1024 bytes) -- ignoring
+0.00.580.333 W model has unused tensor blk.64.attn_k_norm.weight (size = 1024 bytes) -- ignoring
+0.00.580.341 W model has unused tensor blk.64.ffn_gate.weight (size = 50135040 bytes) -- ignoring
+0.00.580.350 W model has unused tensor blk.64.ffn_down.weight (size = 73113600 bytes) -- ignoring
+0.00.580.358 W model has unused tensor blk.64.ffn_up.weight (size = 50135040 bytes) -- ignoring
+0.00.580.370 W model has unused tensor blk.64.nextn.eh_proj.weight (size = 29491200 bytes) -- ignoring
+0.00.580.379 W model has unused tensor blk.64.nextn.enorm.weight (size = 20480 bytes) -- ignoring
+0.00.580.389 W model has unused tensor blk.64.nextn.hnorm.weight (size = 20480 bytes) -- ignoring
+0.00.580.415 W model has unused tensor blk.64.nextn.shared_head_norm.weight (size = 20480 bytes) -- ignoring
+0.07.755.967 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 1765.19 MiB on device 0: cudaMalloc failed: out of memory
+0.07.755.974 E ggml_gallocr_reserve_n_impl: failed to allocate CUDA0 buffer of size 1850933760
+0.07.755.976 E graph_reserve: failed to allocate compute buffers
+0.07.755.996 W sched_reserve: compute buffer allocation failed, retrying without pipeline parallelism
+
+llama_batched_bench: n_kv_max = 130048, n_batch = 2048, n_ubatch = 1024, flash_attn = 1, is_pp_shared = 0, is_tg_separate = 0, n_gpu_layers = 999, n_threads = 12, n_threads_batch = 12
+
+|    PP |     TG |    B |   N_KV |   T_PP s | S_PP t/s |   T_TG s | S_TG t/s |      T s |    S t/s |
+|-------|--------|------|--------|----------|----------|----------|----------|----------|----------|
+|  8192 |    128 |    1 |   8320 |    6.512 |  1257.91 |    5.853 |    21.87 |   12.366 |   672.83 |
+

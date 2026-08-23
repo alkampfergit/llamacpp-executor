@@ -48,7 +48,7 @@ Do you need the full 130k window?
 **Gives up:** 30% of prefill versus Profile B.
 
 ```powershell
-cd S:\OneDrive\Tools\llamacpp
+cd S:\OsDevelop\llamacpp
 
 .\llama-server.exe `
   -m "S:\HuggingFace\lmstudio\Jackrong\Qwopus3.6-35B-A3B-Coder-MTP-GGUF\Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf" `
@@ -83,7 +83,7 @@ Profile A. Needle test: **PASS**.
 reasoning or code-edit fidelity (§6.4).
 
 ```powershell
-cd S:\OneDrive\Tools\llamacpp
+cd S:\OsDevelop\llamacpp
 
 .\llama-server.exe `
   -m "S:\HuggingFace\lmstudio\Jackrong\Qwopus3.6-35B-A3B-Coder-MTP-GGUF\Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf" `
@@ -114,7 +114,7 @@ found**, and faster than Profile B's `q4_0` at `ub 512`.
 **Gives up:** 3072 tokens of context (2.4%).
 
 ```powershell
-cd S:\OneDrive\Tools\llamacpp
+cd S:\OsDevelop\llamacpp
 
 .\llama-server.exe `
   -m "S:\HuggingFace\lmstudio\Jackrong\Qwopus3.6-35B-A3B-Coder-MTP-GGUF\Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf" `
@@ -144,7 +144,7 @@ spare, so `f16` KV and `-ub 512` both fit.
 **Gives up:** Q3 quality, and ~20% generation speed versus Q4_K_M (117 → 94 t/s).
 
 ```powershell
-cd S:\OneDrive\Tools\llamacpp
+cd S:\OsDevelop\llamacpp
 
 .\llama-server.exe `
   -m "S:\HuggingFace\lmstudio\unsloth\Qwen3.6-35B-A3B-GGUF\Qwen3.6-35B-A3B-UD-Q3_K_XL.gguf" `
@@ -199,7 +199,7 @@ for the 5060 Ti (Blackwell, *not* `89`/Ada):
 ```bat
 @echo off
 call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-cd /d S:\OneDrive\Tools\llamacpp\llama.cpp
+cd /d S:\OsDevelop\llamacpp\llama.cpp
 cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON ^
       -DCMAKE_CUDA_ARCHITECTURES="86;120" ^
       -DGGML_SCHED_MAX_COPIES=1 -DGGML_CUDA_FA_ALL_QUANTS=ON
@@ -218,13 +218,34 @@ architectures from `nvidia-smi`, and smoke-tests the result:
   -CMakeExtra '-DGGML_SCHED_MAX_COPIES=1','-DGGML_CUDA_FA_ALL_QUANTS=ON'
 ```
 
-- `GGML_SCHED_MAX_COPIES=1` makes the fast non-pipelined path **deterministic** rather than
-  a side effect of running out of memory. It should also free enough to run `q8_0` KV at
-  `-ub 1024` at full 130k — Profile A's quality with Profile B's speed.
 - `GGML_CUDA_FA_ALL_QUANTS=ON` enables `-ctk q8_0 -ctv q4_0`: precise keys, compact values.
+  **Measured at ×30.5 prefill, and free thereafter** — see [chapter 14](14-build-experiment.md).
+- `GGML_SCHED_MAX_COPIES=1` frees ~845 MiB **at `-ub 512` only** — at `-ub 1024` both builds
+  peak identically and the saving disappears (§14.9). Do not budget for it.
 
-Cost: a long compile and a much larger CUDA binary. **Untested — this is the top open item
-in §6.9.**
+> 🚫 **Neither flag makes anything faster.** Best config against best config, at matched key
+> precision, both at `-ub 1024`: control `q8_0`/`q8_0` = 1257.91 t/s / 22876 MiB, treatment
+> `q8_0`/`q4_0` = 1255.55 t/s / **21860 MiB**. Identical throughput, ~1 GiB less memory. The
+> whole return on this rebuild is VRAM headroom. If you want prefill throughput on this model,
+> **set `-ub 1024`** — worth 3.1% on the binaries you already have, no compiler required.
+
+> ⚠️ **Correction (1 of 2).** This section used to say `GGML_SCHED_MAX_COPIES=1` "makes the fast
+> non-pipelined path deterministic rather than a side effect of running out of memory."
+> [Chapter 14](14-build-experiment.md) measured that and **it is wrong.** There is no speed
+> gain — the treatment build was 3.2–3.4% *slower* on symmetric KV (inside the ±8% noise floor,
+> but 4 of 4 measurements in the same direction). The earlier observation that the automatic
+> non-pipelined fallback "measured faster" was an artefact: that fallback fires when an
+> allocation *fails*, so what was being measured was a run that had stopped spilling into
+> host RAM. The flag buys you the ~845 MiB that caused that difference — not the speed.
+>
+> ⚠️ **Correction (2 of 2).** This section also expected the flag to "free enough to run `q8_0`
+> KV at `-ub 1024` at full 130k". It does not need to: [§14.9](14-build-experiment.md) shows the
+> **control** already runs `-ub 1024` at full 130k in 22876 MiB, and gains 3.1% doing so. There
+> was no locked door for the freed memory to open.
+
+Cost: **10.4 min** to compile on this machine, and `ggml-cuda.dll` grows 84.2 → 116.2 MB.
+`FA_ALL_QUANTS` was expected to dominate the compile and did not, so this is much cheaper to
+try than this section originally assumed.
 
 ---
 
@@ -255,10 +276,13 @@ selected slot by LCP similarity, f_sim_best = 0.987, f_keep = 0.995
 Above 0.95 means prompt caching is working and your effective prefill wait has collapsed by
 an order of magnitude. If the line never appears, check `-np` first.
 
-Finally, to confirm long-context quality on your own settings:
+Finally, to confirm long-context quality on your own settings (`-Model` is mandatory; add
+`-OutDir wiki\benchmarks` to keep results in the wiki's evidence trail):
 
 ```powershell
-.\wiki\scripts\needle-test.ps1 -Label mine -Ctk q8_0 -Ctv q8_0 -Ub 512
+.\.claude\skills\tuning-llamacpp-configs\scripts\needle-test.ps1 -Label mine -Ctk q8_0 -Ctv q8_0 -Ub 512 `
+  -Model "S:\HuggingFace\lmstudio\Jackrong\Qwopus3.6-35B-A3B-Coder-MTP-GGUF\Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf" `
+  -OutDir "S:\OsDevelop\llamacpp\wiki\benchmarks"
 ```
 
 ---

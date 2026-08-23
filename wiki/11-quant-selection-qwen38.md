@@ -478,7 +478,7 @@ What the report adds to the queue:
 | --- | --- | --- |
 | **1** | PPL at ctx 4096, 200 chunks, on the **two files already on disk** | The first quality measurement in this wiki. Costs a download of nothing |
 | **2** | Build a long-context gate that is not verbatim recall | The needle test cannot see a degraded recurrence. Our gap, not the report's |
-| **3** | Rebuild with `-DGGML_CUDA_FA_ALL_QUANTS=ON` | Unchanged from §10.13, and now double-motivated |
+| **3** | ~~Rebuild with `-DGGML_CUDA_FA_ALL_QUANTS=ON`~~ **DONE** | Built and measured — ×30.5 on asymmetric KV, then free. [Chapter 14](14-build-experiment.md) |
 | 4 | If (1) resolves a difference: download `UD-Q4_K_S` and `UD-Q4_K_M`, **not** `UD-Q4_K_XL` | They protect the gates *and* leave the fit intact — or improve it |
 | 5 | Download MagicQuant and re-run the chapter-10 grid | −1031 MiB makes profile A comfortable. Fit win, quality unknown |
 | 6 | KL divergence against a `Q8_0` reference | Replicate the vendor's metric rather than trusting or dismissing it |

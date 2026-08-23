@@ -50,6 +50,50 @@ $Global:LCB_OUT   = if ($OutDir) { $OutDir } else { Join-Path $LCB_DIR 'bench-re
 $Global:LCB_LOGS  = Join-Path $LCB_OUT 'logs'
 $Global:LCB_TSV   = Join-Path $LCB_OUT 'results.tsv'
 
+# A freshly built llama.cpp exe exits INSTANTLY WITH NO OUTPUT AT ALL when the
+# CUDA runtime DLLs are not resolvable -- there is no error message to diagnose,
+# so make it impossible rather than documenting it: this guard THROWS rather than
+# letting the run proceed to a silent, undiagnosable failure later.
+#
+# Windows resolves DLLs from the executable's own directory FIRST, so a folder that
+# ships its own cudart -- the baseline binaries do -- needs no PATH change at all.
+# Check there before touching PATH; build-*/bin folders do not ship one.
+#
+# Get-Command cannot probe for this: .dll is not in PATHEXT, so it would always
+# report "not found" and the guard would then fire on every dot-source.
+$cudartName  = 'cudart64_13.dll'
+$cudaRoot    = Join-Path ${env:ProgramFiles} 'NVIDIA GPU Computing Toolkit\CUDA'
+$cudartFound = $null
+
+if (Test-Path (Join-Path $Global:LCB_DIR $cudartName)) {
+  # Beside the binaries: nothing to do, and nothing to say -- this is the normal case
+  # for the baseline folder.
+  $cudartFound = "beside the binaries ($Global:LCB_DIR)"
+} else {
+  $onPath = $env:PATH -split ';' | Where-Object {
+              $_ -and (Test-Path (Join-Path $_ $cudartName)) } | Select-Object -First 1
+  if ($onPath) {
+    $cudartFound = "on PATH ($onPath)"
+  } else {
+    $newest = Get-ChildItem $cudaRoot -Directory -ErrorAction SilentlyContinue |
+      Where-Object { Test-Path (Join-Path $_.FullName "bin\x64\$cudartName") } |
+      Sort-Object { [version]($_.Name -replace '^v','') } -Descending | Select-Object -First 1
+    if ($newest) {
+      $x64 = Join-Path $newest.FullName 'bin\x64'
+      $env:PATH = $x64 + ';' + (Join-Path $newest.FullName 'bin') + ';' + $env:PATH
+      $cudartFound = "CUDA toolkit $($newest.Name)"
+      Write-Host "PATH += $x64 (CUDA runtime for freshly built binaries)" -ForegroundColor DarkGray
+    }
+  }
+}
+
+if (-not $cudartFound) {
+  throw ("$cudartName was not found beside the binaries ($Global:LCB_DIR), on PATH, or under " +
+         "'$cudaRoot'. A llama.cpp build that cannot resolve the CUDA runtime exits " +
+         "INSTANTLY WITH NO OUTPUT, which is impossible to diagnose from the run itself -- " +
+         "so this is fatal here instead. Install the CUDA toolkit, or copy $cudartName " +
+         "next to the executables in that folder.")
+}
 New-Item -ItemType Directory -Force -Path $LCB_LOGS | Out-Null
 if (-not (Test-Path $LCB_TSV)) {
   "run_utc`tsuite`tlabel`tstatus`tmodel`tctx`tnpp`tntg`tpp_ts`ttg_ts`tvram0`tvram1`tvram_total`tsecs`targs" |
@@ -130,9 +174,20 @@ function Probe {
   # -c is passed here rather than by the caller so it can never be forgotten.
   $argv = @('-m', $Model, '-c', "$Ctx", '-npp', $Npp, '-ntg', $Ntg, '-npl', '1') +
           ($A | Where-Object { $_ -ne '-c' })
-  $out  = & $exe @argv 2>&1 | ForEach-Object { [string]$_ }
+  # ggml's backend registry resolves backend DLLs relative to the WORKING
+  # DIRECTORY, not the exe. A build launched from elsewhere has been observed
+  # loading ggml-rpc.dll / ggml-cpu-haswell.dll out of a DIFFERENT build's
+  # folder, because those filenames do not exist in the new one -- silently
+  # mixing two builds into one measurement. Pin the cwd so it cannot happen.
+  Push-Location $Global:LCB_DIR
+  try     { $out = & $exe @argv 2>&1 | ForEach-Object { [string]$_ } }
+  finally { Pop-Location }
 
-  $secs = [math]::Round($sw.Elapsed.TotalSeconds, 1)
+  # InvariantCulture, deliberately: a double interpolated under an it-IT (or any
+  # comma-decimal) locale writes "22,9" into a TAB-separated file. 73 already-recorded
+  # rows across both results.tsv files did exactly that, which an external review caught.
+  # Format once, here, so every consumer sees "22.9" regardless of the machine's locale.
+  $secs = [math]::Round($sw.Elapsed.TotalSeconds, 1).ToString([cultureinfo]::InvariantCulture)
   $peak = Stop-VramSampler -Job $sampler -Path $smiFile
 
   # Save evidence BEFORE parsing, so a parse failure cannot destroy the run.

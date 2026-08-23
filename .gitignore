@@ -19,10 +19,18 @@
 /*.obj
 
 # ---------------------------------------------------------------------------
-#  Local build trees, if you ever compile here or alongside the submodule
+#  Local build trees, if you ever compile here or alongside the submodule.
+#
+#  ANCHORED WITH "/" ON PURPOSE. These were once unanchored, and git matches
+#  an unanchored pattern at EVERY depth -- so "build-*/" silently swallowed
+#  wiki/benchmarks/build-experiment/, the entire evidence trail for chapter 14,
+#  which "git status" then reported as nothing to commit. This is the same trap
+#  CLAUDE.md records for llama.cpp's own "/build*" eating a BUILD-* manifest.
+#  Build trees only ever appear at the repo root or inside the submodule (which
+#  has its own rules), so anchoring loses nothing and cannot hide evidence.
 # ---------------------------------------------------------------------------
-build/
-build-*/
+/build/
+/build-*/
 out/
 cmake-build-*/
 install/
@@ -64,8 +72,10 @@ wiki/benchmarks/server.log
 bench-results/
 
 # ---------------------------------------------------------------------------
-#  Windows / OneDrive cruft. This folder lives inside OneDrive, which drops
-#  desktop.ini files around and creates conflicted copies.
+#  Windows cruft. This folder USED to live inside OneDrive, which dropped
+#  desktop.ini files around and created conflicted copies. It now lives at
+#  S:\OsDevelop\llamacpp, outside any sync root -- the rules are kept anyway:
+#  harmless, and they still apply if it is ever copied back under one.
 # ---------------------------------------------------------------------------
 desktop.ini
 Thumbs.db

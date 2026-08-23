@@ -190,8 +190,23 @@ if ($CpuOnly) {
               ForEach-Object { $_.Trim() -replace '\.', '' } |
               Where-Object { $_ } | Sort-Object { [int]$_ } -Unique
       if ($caps) {
-        $CudaArch = ($caps -join ';')
+        # "-real" = SASS only, no PTX. Correct BY CONSTRUCTION here: this list was
+        # derived from the GPUs physically present, so PTX for those same
+        # architectures could only ever be a second, unreachable copy of every
+        # kernel -- the driver always prefers SASS. A bare "86" emits both.
+        #
+        # This was a real defect: build-control and build-fa were built with bare
+        # numbers and each carries a full redundant PTX image (141 and 186 blobs
+        # per architecture). No runtime effect -- neither card JITs -- but the
+        # binaries are needlessly large. See wiki/14-build-experiment.md 14.2.
+        #
+        # Safe with Blackwell: ggml/src/ggml-cuda/CMakeLists.txt rewrites 12X to
+        # 12Xa and PRESERVES the suffix, so "120-real" becomes "120a-real".
+        $CudaArch = (($caps | ForEach-Object { "$_-real" }) -join ';')
         Write-Host "Detected $($caps.Count) distinct architecture(s) across $((nvidia-smi -L | Measure-Object).Count) GPU(s)."
+        Write-Host "Using -real (SASS only, no PTX): every installed GPU has native code," -ForegroundColor DarkGray
+        Write-Host "so PTX for these same architectures would never be used. Pass -CudaArch" -ForegroundColor DarkGray
+        Write-Host "with bare numbers (e.g. '86;120') if you want a JIT fallback for OTHER GPUs." -ForegroundColor DarkGray
       }
     } catch {}
   }
@@ -199,7 +214,7 @@ if ($CpuOnly) {
   Write-Host "-DCMAKE_CUDA_ARCHITECTURES=`"$CudaArch`""
   nvidia-smi --query-gpu=index,name,compute_cap --format=csv | Write-Host
   # A wrong arch is SILENT: the binary works but JIT-compiles from PTX.
-  if ($CudaArch -match '\b89\b' -and $CudaArch -notmatch '\b120\b') {
+  if ($CudaArch -match '\b89(-real|-virtual)?\b' -and $CudaArch -notmatch '\b12[0-9]a?(-real|-virtual)?\b') {
     Write-Host "NOTE: 89 is Ada. Blackwell cards (RTX 50xx) are 120 -- verify against the table above." -ForegroundColor Yellow
   }
 }
@@ -243,6 +258,23 @@ if (Test-Path $cache) {
     # CMake refuses to reconfigure across generators; the only fix is a wipe.
     Step "Existing build dir used generator '$gen' -- wiping (CMake cannot switch generators)"
     Remove-Item $bd -Recurse -Force
+  }
+}
+# A CMakeCache.txt records the ABSOLUTE path it was generated in. Move or rename the
+# folder and CMake aborts with "is different than the directory ... where CMakeCache.txt
+# was created" -- it will not re-root an existing cache. This bit when the whole repo moved
+# from S:\OneDrive\Tools\llamacpp to S:\OsDevelop\llamacpp: build-control/ and build-fa/
+# both still pointed at the old root. A wipe is the only fix, so do it automatically
+# rather than failing with CMake's wording.
+if (Test-Path $cache) {
+  $cachedDir = (Select-String -Path $cache -Pattern '^CMAKE_CACHEFILE_DIR:INTERNAL=(.*)$').Matches.Groups[1].Value
+  if ($cachedDir) {
+    $want = ([IO.Path]::GetFullPath($bd)).TrimEnd('\')
+    $have = ([IO.Path]::GetFullPath($cachedDir.Replace('/','\'))).TrimEnd('\')
+    if ($have -ne $want) {
+      Step "Build dir was configured at '$have' but is now '$want' -- wiping (CMake cannot re-root a cache)"
+      Remove-Item $bd -Recurse -Force
+    }
   }
 }
 

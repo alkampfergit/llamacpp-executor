@@ -17,5 +17,9 @@ wiki/benchmarks/needle-prompt.txt -text
 wiki/benchmarks/logs/**            -text
 wiki/benchmarks/results.tsv        -text
 
+# Chapter 14's control-vs-treatment evidence. Same rule, same reason: these are
+# captured llama.cpp output and a TSV of measurements, not source.
+wiki/benchmarks/build-experiment/**  -text
+
 # PowerShell scripts want CRLF on Windows; leave them to the working tree.
 *.ps1 text=auto

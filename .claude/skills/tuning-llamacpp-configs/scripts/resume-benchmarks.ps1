@@ -14,13 +14,32 @@
 #  Usage:
 #     .\resume-benchmarks.ps1 -Only mtp        # highest value remaining
 #     .\resume-benchmarks.ps1                  # everything below
+#     .\resume-benchmarks.ps1 -Model <other.gguf> -OutDir <dir>   # override the defaults
 # ===========================================================================
 param(
   [ValidateSet('all','split','deep','loadmode')]
-  [string] $Only = 'all'
+  [string] $Only   = 'all',
+  [string] $Model  = 'S:\HuggingFace\lmstudio\Jackrong\Qwopus3.6-35B-A3B-Coder-MTP-GGUF\Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf',
+  [string] $OutDir
 )
 
-. "S:\OneDrive\Tools\llamacpp\wiki\scripts\bench-harness.ps1"
+# Default -OutDir to this repo's own evidence trail, wiki/benchmarks/, located by walking
+# up from this script to the folder holding llama-server.exe. Self-locating so moving the
+# folder needs no edit here; pass -OutDir to send a run somewhere else.
+if (-not $OutDir) {
+  $repoRoot = $PSScriptRoot
+  while ($repoRoot -and -not (Test-Path (Join-Path $repoRoot 'llama-server.exe'))) {
+    $repoRoot = Split-Path $repoRoot -Parent
+  }
+  if (-not $repoRoot) { throw "Could not locate the repo root above $PSScriptRoot. Pass -OutDir explicitly." }
+  $OutDir = Join-Path $repoRoot 'wiki\benchmarks'
+}
+
+# bench-harness.ps1 is the single source of truth and lives alongside this script under
+# .claude/skills/tuning-llamacpp-configs/scripts/ (see CLAUDE.md). Its portable default
+# output dir is bench-results/ next to the binaries; -OutDir here keeps this repo's own
+# campaign landing in wiki/benchmarks/ as it always has.
+. (Join-Path $PSScriptRoot 'bench-harness.ps1') -Model $Model -OutDir $OutDir
 
 $q8   = @('-ctk','q8_0','-ctv','q8_0')
 $q4   = @('-ctk','q4_0','-ctv','q4_0')
@@ -73,12 +92,12 @@ if ($Only -in 'all','loadmode') {
 Write-Host "`n=== SUMMARY (successful runs, best prefill first) ===" -ForegroundColor Cyan
 # Out-String: a bare Format-Table emits format objects that get mangled if the
 # caller pipes this script's output anywhere.
-Write-Host ((Import-Csv -Delimiter "`t" $Global:RESULTS |
+Write-Host ((Import-Csv -Delimiter "`t" $Global:LCB_TSV |
   Where-Object { $_.status -eq 'OK' } |
   Sort-Object { [double]$_.pp_ts } -Descending |
   Select-Object -First 20 suite, label, ctx, npp, pp_ts, tg_ts, vram_total |
   Format-Table -AutoSize | Out-String).TrimEnd())
 
-Write-Host "Full data: $Global:RESULTS"
+Write-Host "Full data: $Global:LCB_TSV"
 Write-Host "Speculative decoding cannot be measured here -- it needs llama-server." -ForegroundColor DarkGray
-Write-Host "Use: .\mtp-test.ps1   (see wiki/09-speculative-decoding.md)" -ForegroundColor DarkGray
+Write-Host "Use: .\mtp-test.ps1 -Model <model.gguf>   (see wiki/09-speculative-decoding.md)" -ForegroundColor DarkGray

@@ -22,7 +22,12 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$LC    = 'S:\OneDrive\Tools\llamacpp'
+# Repo root = the folder holding llama-server.exe, found by walking up from this
+# script under .claude/skills/tuning-llamacpp-configs/scripts/. Self-locating (the
+# same idiom bench-harness.ps1 uses) so moving the folder needs no edit here.
+$LC = $PSScriptRoot
+while ($LC -and -not (Test-Path (Join-Path $LC 'llama-server.exe'))) { $LC = Split-Path $LC -Parent }
+if (-not $LC) { throw "llama-server.exe not found in any parent of $PSScriptRoot" }
 $Model = 'S:\HuggingFace\lmstudio\Jackrong\Qwopus3.6-35B-A3B-Coder-MTP-GGUF\Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf'
 
 if (-not (Test-Path $Model)) { throw "Model not found: $Model" }
@@ -68,11 +73,12 @@ Write-Host "Profile A (quality-first): ctx=$Ctx ub=$Ubatch KV=q8_0/q8_0 port=$Po
 
 if ($Background) {
   $log = Join-Path $LC 'wiki\benchmarks\server.log'
-  Start-Process -FilePath (Join-Path $LC 'llama-server.exe') -ArgumentList $argv `
+  Start-Process -FilePath (Join-Path $LC 'llama-server.exe') -WorkingDirectory $LC -ArgumentList $argv `
     -WindowStyle Hidden -RedirectStandardError $log
   Write-Host "Running in background. Log: $log"
   Write-Host "Stop with: Get-Process llama-server | Stop-Process"
 } else {
-  & (Join-Path $LC 'llama-server.exe') @argv
+  Push-Location $LC
+  try { & (Join-Path $LC 'llama-server.exe') @argv } finally { Pop-Location }
 }
 

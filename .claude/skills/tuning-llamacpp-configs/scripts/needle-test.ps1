@@ -44,11 +44,14 @@ param(
   [string] $Split = '12,29',
   [int]    $Port = 9077,
   [Parameter(Mandatory=$true)][string] $Model,
-  [int]    $Records = 3000
+  [int]    $Records = 3000,
+  [string] $OutDir
 )
 
 $LC       = $($d=$PSScriptRoot; for($i=0;$i -lt 6 -and $d;$i++){ if(Test-Path (Join-Path $d 'llama-server.exe')){break}; $d=Split-Path $d -Parent }; if(-not $d){throw 'llama-server.exe not found'}; $d)
-$benchDir = Join-Path $LC 'bench-results'
+# Portable default is bench-results/ next to the binaries; pass -OutDir to land this
+# repo's own campaign in wiki/benchmarks/ instead (see CLAUDE.md).
+$benchDir = if ($OutDir) { $OutDir } else { Join-Path $LC 'bench-results' }
 $needle   = Join-Path $benchDir 'needle-prompt.txt'
 $out      = Join-Path $benchDir 'needle-results.md'
 $slog     = Join-Path $benchDir "logs\server_$Label.log"
@@ -79,7 +82,7 @@ $argv = @('-m',$Model,'--host','127.0.0.1','--port',"$Port",'-c',"$Ctx",'-np','1
           '-ctk',$Ctk,'-ctv',$Ctv,'-fit','off','--temp','0','--no-warmup')
 
 Write-Host "[$Label] server: ctx=$Ctx ub=$Ub kv=$Ctk/$Ctv ts=$Split" -ForegroundColor Cyan
-$p = Start-Process -FilePath (Join-Path $LC 'llama-server.exe') -ArgumentList $argv `
+$p = Start-Process -FilePath (Join-Path $LC 'llama-server.exe') -WorkingDirectory $LC -ArgumentList $argv `
        -PassThru -WindowStyle Hidden -RedirectStandardError $slog
 
 $ready = $false

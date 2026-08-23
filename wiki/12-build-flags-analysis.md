@@ -78,7 +78,7 @@ anything. `cuobjdump` will tell you exactly which architectures a CUDA binary ca
 
 ```powershell
 & "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.1\bin\cuobjdump.exe" `
-    --list-elf S:\OneDrive\Tools\llamacpp\ggml-cuda.dll
+    --list-elf S:\OsDevelop\llamacpp\ggml-cuda.dll
 ```
 
 Run against the **baseline** `ggml-cuda.dll` (135.3 MB, build `10509`):
@@ -176,7 +176,16 @@ longer pay 45 times over.
 
 > **Be honest about what this is.** We have not built either way, so the compile-time saving is
 > reasoned from the CMake and the file count, not measured. The *direction* is certain (strictly
-> less code generation); the magnitude is not. What is certain and useful is the cost side:
+> less code generation); the magnitude is not.
+>
+> **✅ Update — [chapter 14](14-build-experiment.md) built it, and this section was right.**
+> Both builds were made with the bare `"86;120"` this section warns about, and `cuobjdump`
+> confirms the predicted redundant PTX: **141 blobs per architecture** in the control and
+> **186** with `GGML_CUDA_FA_ALL_QUANTS=ON` — i.e. the penalty does scale with the extra 45
+> translation units, exactly as argued above. What was *not* confirmed is the compile-time
+> story: the `FA_ALL_QUANTS` build took only **10.4 min** including the wasted PTX passes, so
+> the "long pole" framing was too pessimistic. `-real` remains free on this machine and is now
+> the documented default. What is certain and useful is the cost side:
 > `-real` costs you nothing on this machine, because both cards have native SASS and neither
 > will ever need to JIT. If you put a third, newer GPU in this box, `-real` is the flag that
 > makes it fall over — and that is a fine trade to make explicitly.
@@ -509,8 +518,10 @@ the only notice would have gone to the log file nobody reads on a green build.
 > is the thing that decides whether the flag is worth passing at all.
 
 **Twenty-nine occurrences** need the substitution `GGML_SCHED_MAX_COPIES` →
-`GGML_SCHED_MAX_COPIES`: **19 in `wiki/`** (chapters 0, 3, 4, 6, 7, 8, 10, 11 and
-`wiki/scripts/serve-qwopus-130k.ps1`) and **10 in `.claude/skills/`** (both skills, including
+`GGML_SCHED_MAX_COPIES`: **19 in `wiki/`** (chapters 0, 3, 4, 6, 7, 8, 10, 11 and, at the time
+of this audit, `wiki/scripts/serve-qwopus-130k.ps1` — that script has since moved to
+`.claude/skills/tuning-llamacpp-configs/scripts/serve-qwopus-130k.ps1`) and **10 in
+`.claude/skills/`** (both skills, including
 `building-llamacpp-cuda`'s SKILL front-matter, its options table, the build script's usage
 banner, and `tuning-llamacpp-configs`' `bench-harness.ps1` console hint). **That correction is
 deliberately not made

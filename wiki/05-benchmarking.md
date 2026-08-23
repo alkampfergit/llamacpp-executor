@@ -79,8 +79,9 @@ contiguous memory, and the run degraded.
 > `llama-bench` invocation are fine when memory is abundant and actively misleading when it
 > is tight. Since "tight" is exactly the regime we care about, always relaunch.
 
-This is why the harness in [`scripts/bench-harness.ps1`](scripts/bench-harness.ps1) spawns a
-fresh process for every single data point.
+This is why the harness in
+[`bench-harness.ps1`](../.claude/skills/tuning-llamacpp-configs/scripts/bench-harness.ps1)
+spawns a fresh process for every single data point.
 
 ---
 
@@ -195,10 +196,16 @@ Always finish a tuning campaign by measuring the real thing over HTTP.
 9. **Change one variable at a time.**
 10. **Validate over HTTP at the end.** (§5.5)
 
-Steps 4, 5, 7 and 8 are automated by [`scripts/bench-harness.ps1`](scripts/bench-harness.ps1):
+Steps 4, 5, 7 and 8 are automated by
+[`bench-harness.ps1`](../.claude/skills/tuning-llamacpp-configs/scripts/bench-harness.ps1),
+the single source of truth for this harness — there is no separate wiki copy. Its portable
+default writes results to `bench-results/`; pass `-OutDir` to keep this repo's own campaign in
+`wiki/benchmarks/` instead:
 
 ```powershell
-. "S:\OneDrive\Tools\llamacpp\wiki\scripts\bench-harness.ps1"
+. "S:\OsDevelop\llamacpp\.claude\skills\tuning-llamacpp-configs\scripts\bench-harness.ps1" `
+  -Model "S:\HuggingFace\lmstudio\Jackrong\Qwopus3.6-35B-A3B-Coder-MTP-GGUF\Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf" `
+  -OutDir "S:\OsDevelop\llamacpp\wiki\benchmarks"
 
 $common = @("-fa","on","-ngl","999","-fit","off","-ts","12,29","-ctk","q8_0","-ctv","q8_0")
 foreach ($u in 256,512,1024) {
@@ -269,11 +276,16 @@ Every design choice here is deliberate:
 | ~107,700 tokens total | Exercises most of a 130k window. A 4k test proves nothing about 130k. |
 | `temperature 0`, `max_tokens 32` | Deterministic, and the answer is the first thing said. |
 
-Run it with [`scripts/needle-test.ps1`](scripts/needle-test.ps1):
+Run it with
+[`needle-test.ps1`](../.claude/skills/tuning-llamacpp-configs/scripts/needle-test.ps1) —
+`-Model` is mandatory, and `-OutDir` keeps the results in `wiki/benchmarks/` instead of the
+portable default of `bench-results/`:
 
 ```powershell
-.\wiki\scripts\needle-test.ps1 -Label q8-130k -Ctk q8_0 -Ctv q8_0 -Ub 512
-.\wiki\scripts\needle-test.ps1 -Label q4-130k -Ctk q4_0 -Ctv q4_0 -Ub 1024
+$model = "S:\HuggingFace\lmstudio\Jackrong\Qwopus3.6-35B-A3B-Coder-MTP-GGUF\Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf"
+$outDir = "S:\OsDevelop\llamacpp\wiki\benchmarks"
+.\.claude\skills\tuning-llamacpp-configs\scripts\needle-test.ps1 -Label q8-130k -Ctk q8_0 -Ctv q8_0 -Ub 512 -Model $model -OutDir $outDir
+.\.claude\skills\tuning-llamacpp-configs\scripts\needle-test.ps1 -Label q4-130k -Ctk q4_0 -Ctv q4_0 -Ub 1024 -Model $model -OutDir $outDir
 ```
 
 It builds the haystack once and reuses it, so every configuration sees a byte-identical

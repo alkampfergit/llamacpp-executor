@@ -161,7 +161,8 @@ cmake -B build -DGGML_CUDA=ON -DGGML_CUDA_FA_ALL_QUANTS=ON
 `q4_0` KV buys 24% more prefill. Throughput benchmarks **cannot** tell you what it costs in
 quality, so a separate gate is needed.
 
-**Method** (reproducible via [`scripts/needle-test.ps1`](scripts/needle-test.ps1)): build a
+**Method** (reproducible via
+[`needle-test.ps1`](../.claude/skills/tuning-llamacpp-configs/scripts/needle-test.ps1)): build a
 deliberately boring 3000-record telemetry log, hide one unguessable fact in **RECORD 0001** —
 the very start, the hardest place to retain — and ask for it at the very end.
 
@@ -305,7 +306,7 @@ carries a near-full one. Sweep *downward* from the arithmetic suggestion.
 | Experiment | Why it matters |
 | --- | --- |
 | **Rebuild with `-DGGML_SCHED_MAX_COPIES=1`** | Makes the lean path deterministic instead of accidental; likely enables `q8_0` at `ub 1024` at full 130k — best of both worlds. **Top priority** |
-| Rebuild with `-DGGML_CUDA_FA_ALL_QUANTS=ON` | Enables `q8_0` keys + `q4_0` values, arguably the ideal 130k layout (§6.3) |
+| ~~Rebuild with `-DGGML_CUDA_FA_ALL_QUANTS=ON`~~ **DONE** | Measured at ×30.5 prefill and then free — see [chapter 14](14-build-experiment.md) |
 | `--spec-type draft-mtp`, `n-max 1…6` | The model ships an MTP head; ~1.17× claimed on 35B-A3B. Costs ~530 MiB. See [chapter 9](09-speculative-decoding.md) |
 | Harder quality gates for `q4_0` | Needle retrieval passed; reasoning and code-edit fidelity untested (§6.4) |
 | Prompt-caching measurement on real agent traffic | Per §5.5, this dominates everything else |

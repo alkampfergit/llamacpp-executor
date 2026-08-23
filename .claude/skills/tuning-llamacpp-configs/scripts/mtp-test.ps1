@@ -23,11 +23,14 @@ param(
   [int[]]    $NMax   = @(1,2,3,4,5,6),
   [string[]] $SpecTypes = @('draft-mtp'),
   [int]      $Predict = 400,
-  [Parameter(Mandatory=$true)][string] $Model
+  [Parameter(Mandatory=$true)][string] $Model,
+  [string]   $OutDir
 )
 
 $LC   = $($d=$PSScriptRoot; for($i=0;$i -lt 6 -and $d;$i++){ if(Test-Path (Join-Path $d 'llama-server.exe')){break}; $d=Split-Path $d -Parent }; if(-not $d){throw 'llama-server.exe not found'}; $d)
-$bd   = Join-Path $LC 'bench-results'
+# Portable default is bench-results/ next to the binaries; pass -OutDir to land this
+# repo's own campaign in wiki/benchmarks/ instead (see CLAUDE.md).
+$bd   = if ($OutDir) { $OutDir } else { Join-Path $LC 'bench-results' }
 $out  = Join-Path $bd 'mtp-results.md'
 New-Item -ItemType Directory -Force -Path (Join-Path $bd 'logs') | Out-Null
 
@@ -50,7 +53,7 @@ function Measure-Spec {
             '-ngl','999','-sm','layer','-ts',$Split,'-fa','on','-b','2048','-ub',"$Ubatch",
             '-ctk',$Ctk,'-ctv',$Ctv,'-fit','off','--no-warmup') + $Extra
 
-  $p = Start-Process -FilePath (Join-Path $LC 'llama-server.exe') -ArgumentList $argv `
+  $p = Start-Process -FilePath (Join-Path $LC 'llama-server.exe') -WorkingDirectory $LC -ArgumentList $argv `
          -PassThru -WindowStyle Hidden -RedirectStandardError $slog
 
   $ready = $false

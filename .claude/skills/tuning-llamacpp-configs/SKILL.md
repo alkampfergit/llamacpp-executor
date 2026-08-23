@@ -348,6 +348,12 @@ Load only what the current question needs.
   VRAM sampling, append-only results, full log per run.
 - `scripts/needle-test.ps1` — long-context quality gate over HTTP. Run it before adopting
   any lossy KV setting, and to get real deep-context throughput.
+- `scripts/mtp-test.ps1` — speculative-decoding measurement over HTTP: baseline vs
+  draft-mtp/n-gram across `-spec-draft-n-max` values.
+
+These are the single source of truth for these scripts — there is no separate wiki copy.
+All three require `-Model`; each writes results under `bench-results/` next to the llama.cpp
+binaries by default, overridable with `-OutDir`.
 
 Requires: llama.cpp CUDA build with `llama-fit-params.exe`, `llama-batched-bench.exe` and
 `llama-server.exe`; `nvidia-smi` on PATH; PowerShell 7+.
