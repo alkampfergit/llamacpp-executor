@@ -147,7 +147,7 @@ than not having looked. The bad regex is what let the contradiction through unno
 
 ```powershell
 .\.claude\skills\building-llamacpp-cuda\scripts\build-llamacpp.ps1 `
-  -BuildDir build-fa-real -CudaArch '86-real;120a-real' -Label fa-all-quants-real `
+  -BuildDir build-fa-real -CudaArch '86-real;120-real' -Label fa-all-quants-real `
   -CMakeExtra '-DGGML_CUDA_FA_ALL_QUANTS=ON','-DGGML_SCHED_MAX_COPIES=1'
 ```
 
