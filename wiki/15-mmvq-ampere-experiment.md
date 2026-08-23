@@ -311,7 +311,12 @@ All in `.claude/skills/tuning-llamacpp-configs/scripts/`.
 ---
 
 Evidence: `wiki/benchmarks/mmvq-experiment/` (temperature 0.6) and
-`wiki/benchmarks/mmvq-experiment-greedy/` (temperature 0), each with per-run server logs.
+`wiki/benchmarks/mmvq-experiment-greedy/` (temperature 0). Each carries a
+`PROVENANCE.md` naming the binary, the config, and **which logs are missing** — both
+directories hold a partial log set, because the per-env filename fix in §15.7 landed
+mid-experiment and never covered repetition collisions. The `mtp-results.md` in each
+is complete; the logs are not, and pairing a log with a row by filename alone will
+mislead you.
 
 Previous: [Chapter 14 — The build experiment](14-build-experiment.md) ·
 Back to [README](README.md).
