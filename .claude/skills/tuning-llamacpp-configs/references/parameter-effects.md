@@ -21,7 +21,7 @@ machine whose GPU also drives a display.
 > | `q4_0` KV is *faster* (frees headroom for a bigger `-ub`) | **Not faster**: 1187 vs 1208. It buys 2032 MiB and nothing else |
 > | Non-pipelined fallback: +43% prefill | **0%** (1208 vs 1219) — though still worth 422 MiB of compute buffer |
 > | Context taxes prefill (−31% at 130k) | **No tax**: 1208 t/s at 130k vs 1202 at 8k |
-> | `draft-mtp`: −7% to −29% | **+110%** (22.4 → 47.1 t/s at `n-max 4`) |
+> | `draft-mtp`: −7% to −29% | **+110%** (22.4 → 47.1 t/s at `n-max 4`). Magnitude solid; the *`n-max` shape is not* — that sweep was 1 run/point at `temperature 0.6`, where TG tracks resampled acceptance at r² = 0.872, ±20% spread. Sweep `n-max` only at `-Temperature 0` |
 >
 > The one thing that did transfer: **the *method*.** Predict → measure at the real `-c` → one
 > fresh process per point → quality-gate → grep the logs. Every specific number needed

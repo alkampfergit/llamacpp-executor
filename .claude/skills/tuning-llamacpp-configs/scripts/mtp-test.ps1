@@ -23,14 +23,46 @@ param(
   [int[]]    $NMax   = @(1,2,3,4,5,6),
   [string[]] $SpecTypes = @('draft-mtp'),
   [int]      $Predict = 400,
+
+  # 0 = greedy. Use 0 whenever you need to resolve a small effect: at the 0.6
+  # default the sampled token sequence -- and therefore draft acceptance, and
+  # therefore TG -- changes on every run, swamping anything below roughly +-20%.
+  [double]   $Temperature = 0.6,
   [Parameter(Mandatory=$true)][string] $Model,
-  [string]   $OutDir
+  [string]   $OutDir,
+
+  # Which build to measure. The server is always launched with its
+  # WorkingDirectory set here, because ggml resolves backend DLLs relative to
+  # the cwd: launching a new build from the baseline root silently loads the
+  # baseline's ggml-rpc.dll and ggml-cpu-haswell.dll.
+  [string]   $LlamaDir
 )
 
-$LC   = $($d=$PSScriptRoot; for($i=0;$i -lt 6 -and $d;$i++){ if(Test-Path (Join-Path $d 'llama-server.exe')){break}; $d=Split-Path $d -Parent }; if(-not $d){throw 'llama-server.exe not found'}; $d)
+# Locate the llama-server.exe to measure. Same contract as bench-harness.ps1 and
+# vram-budget.ps1: -LlamaDir wins, otherwise walk up from this script. NOTE that
+# the walk-up lands on the BASELINE root in this repo, so pass -LlamaDir to
+# measure a fresh build, e.g. -LlamaDir S:/OsDevelop/llamacpp/llama.cpp/build-mmvq/bin
+function Find-LlamaDir {
+  param([string] $Explicit)
+  if ($Explicit) {
+    $r = (Resolve-Path $Explicit -ErrorAction SilentlyContinue).Path
+    if ($r -and (Test-Path (Join-Path $r 'llama-server.exe'))) { return $r }
+    throw "llama-server.exe not found in -LlamaDir '$Explicit'"
+  }
+  $dir = $PSScriptRoot
+  for ($i = 0; $i -lt 6 -and $dir; $i++) {
+    if (Test-Path (Join-Path $dir 'llama-server.exe')) { return $dir }
+    $dir = Split-Path $dir -Parent
+  }
+  throw "Could not locate llama-server.exe. Pass -LlamaDir explicitly."
+}
+$LC   = Find-LlamaDir -Explicit $LlamaDir
 # Portable default is bench-results/ next to the binaries; pass -OutDir to land this
 # repo's own campaign in wiki/benchmarks/ instead (see CLAUDE.md).
 $bd   = if ($OutDir) { $OutDir } else { Join-Path $LC 'bench-results' }
+# Two sweeps that differ only by an env var would otherwise write the same log
+# filenames and the first arm's logs would be silently overwritten.
+$runTag = if ($env:GGML_CUDA_MMVQ_MAX_BATCH) { "mmvq$($env:GGML_CUDA_MMVQ_MAX_BATCH)" } else { 'mmvqdef' }
 $out  = Join-Path $bd 'mtp-results.md'
 New-Item -ItemType Directory -Force -Path (Join-Path $bd 'logs') | Out-Null
 
@@ -47,7 +79,7 @@ function Measure-Spec {
 
   Get-Process llama-server -ErrorAction SilentlyContinue | Stop-Process -Force
   Start-Sleep -Milliseconds 600
-  $slog = Join-Path $bd "logs\mtp_$($Label -replace '[^\w\.\-]','_').log"
+  $slog = Join-Path $bd "logs\mtp_${runTag}_$($Label -replace '[^\w\.\-]','_').log"
 
   $argv = @('-m',$Model,'--host','127.0.0.1','--port',"$Port",'-c',"$Ctx",'-np','1',
             '-ngl','999','-sm','layer','-ts',$Split,'-fa','on','-b','2048','-ub',"$Ubatch",
@@ -79,7 +111,7 @@ function Measure-Spec {
   $mtpIgnored = (Select-String -Path $slog -Pattern 'unused tensor blk\.\d+\.nextn' -Quiet)
 
   $body = @{ messages = @(@{role='user'; content=$PROMPT})
-             max_tokens = $Predict; temperature = 0.6; top_p = 0.95
+             max_tokens = $Predict; temperature = $Temperature; top_p = 0.95
              chat_template_kwargs = @{ enable_thinking = $false } } | ConvertTo-Json -Depth 6 -Compress
 
   # one warm request (loads caches), then the measured one
@@ -95,6 +127,24 @@ function Measure-Spec {
 
   $tg = [math]::Round($r.timings.predicted_per_second,2)
   $n  = $r.timings.predicted_n
+
+  $txt = [string]$r.choices[0].message.content
+  $sha = if ($txt) {
+    $h = [Security.Cryptography.SHA256]::Create()
+    try { (([BitConverter]::ToString($h.ComputeHash([Text.Encoding]::UTF8.GetBytes($txt)))) -replace '-','').Substring(0,8) }
+    finally { $h.Dispose() }
+  } else { '-' }
+
+  # Acceptance and mean accepted run come from the server's own print_timing line.
+  # Both requests log one, so take the LAST (the measured one, not the warm-up).
+  # Without these you cannot tell a kernel-cost change from an acceptance change.
+  $acc = $null; $mlen = $null
+  $accLine = Select-String -Path $slog -Pattern 'draft acceptance =\s*([\d.]+).*?mean len =\s*([\d.]+)' |
+             Select-Object -Last 1
+  if ($accLine) {
+    $acc  = [double]$accLine.Matches[0].Groups[1].Value
+    $mlen = [double]$accLine.Matches[0].Groups[2].Value
+  }
   Get-Process llama-server -ErrorAction SilentlyContinue | Stop-Process -Force
   Start-Sleep -Milliseconds 500
 
@@ -104,10 +154,23 @@ function Measure-Spec {
   Write-Host ("{0,-24} TG={1,7} t/s   tokens={2,4}{3}" -f $Label,$tg,$n,$flag) `
     -ForegroundColor $(if($flag){'Yellow'}else{'Green'})
 
-  return [pscustomobject]@{ Label=$Label; TG=$tg; Tokens=$n; MtpIgnored=$mtpIgnored }
+  return [pscustomobject]@{ Label=$Label; TG=$tg; Tokens=$n; MtpIgnored=$mtpIgnored
+                            Acc=$acc; MeanLen=$mlen; Sha=$sha }
 }
 
+# Label every number with the binary that produced it (CLAUDE.md precondition 3) and with
+# any env var that changes kernel selection -- otherwise two sweeps that differ only by an
+# env var produce two identical-looking tables.
+$verLine = (& (Join-Path $LC 'llama-server.exe') --version 2>&1 |
+            Select-String 'version:' | Select-Object -First 1).Line
+if (-not $verLine) { $verLine = '(--version produced no version line)' }
+$envNote = if ($env:GGML_CUDA_MMVQ_MAX_BATCH) { "GGML_CUDA_MMVQ_MAX_BATCH=$($env:GGML_CUDA_MMVQ_MAX_BATCH)" }
+           else { 'GGML_CUDA_MMVQ_MAX_BATCH unset' }
+
 Write-Host "=== Speculative decoding: ctx=$Ctx ub=$Ubatch KV=$Ctk/$Ctv predict=$Predict ===" -ForegroundColor Cyan
+Write-Host "bin: $LC" -ForegroundColor DarkGray
+Write-Host "    $($verLine.Trim())" -ForegroundColor DarkGray
+Write-Host "    $envNote" -ForegroundColor DarkGray
 $rows = @()
 $rows += Measure-Spec 'baseline' @()
 foreach ($st in $SpecTypes) {
@@ -119,12 +182,17 @@ $rows = $rows | Where-Object { $_ }
 
 $base = ($rows | Where-Object { $_.Label -eq 'baseline' }).TG
 if (-not (Test-Path $out)) { "# Speculative decoding results`n" | Out-File -Encoding utf8 $out }
-("`n## ctx=$Ctx ub=$Ubatch KV=$Ctk/$Ctv predict=$Predict`n") | Add-Content $out
-"| config | TG t/s | vs baseline | MTP loaded |" | Add-Content $out
-"|---|---|---|---|" | Add-Content $out
+("`n## ctx=$Ctx ub=$Ubatch KV=$Ctk/$Ctv predict=$Predict ts=$Split temp=$Temperature`n") | Add-Content $out
+("- bin: ``$LC``") | Add-Content $out
+("- $($verLine.Trim())") | Add-Content $out
+("- $envNote`n") | Add-Content $out
+"| config | TG t/s | vs baseline | acceptance | mean accepted | out sha | MTP loaded |" | Add-Content $out
+"|---|---|---|---|---|---|---|" | Add-Content $out
 foreach ($r in $rows) {
   $sp = if ($base -gt 0) { "{0:P0}" -f (($r.TG - $base)/$base) } else { '-' }
-  ("| {0} | {1} | {2} | {3} |" -f $r.Label,$r.TG,$sp,(-not $r.MtpIgnored)) | Add-Content $out
+  ("| {0} | {1} | {2} | {3} | {4} | {5} | {6} |" -f $r.Label,$r.TG,$sp,
+     $(if($null -ne $r.Acc){$r.Acc}else{'-'}), $(if($null -ne $r.MeanLen){$r.MeanLen}else{'-'}),
+     $r.Sha, (-not $r.MtpIgnored)) | Add-Content $out
 }
 Write-Host "`nbaseline TG = $base t/s" -ForegroundColor Cyan
 Write-Host "results: $out" -ForegroundColor DarkGray
