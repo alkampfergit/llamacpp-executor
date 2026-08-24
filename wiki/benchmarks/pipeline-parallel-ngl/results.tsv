@@ -1,0 +1,7 @@
+run_utc	suite	label	status	model	ctx	npp	ntg	pp_ts	tg_ts	vram0	vram1	vram_total	secs	args
+2026-08-24T15:44:03Z	pp-ngl	ngl999 r1	OK	Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf	64000	8192	128	2418.16	97.19	7545	15736	23281	19.6	-ngl 999 -sm layer -ts 13,28 -fa on -b 2048 -ub 512 -fit off -ctk q8_0 -ctv q8_0
+2026-08-24T15:44:26Z	pp-ngl	ngl41 r1	OK	Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf	64000	8192	128	1069.85	85.96	7069	15812	22881	23.3	-ngl 41 -sm layer -ts 13,28 -fa on -b 2048 -ub 512 -fit off -ctk q8_0 -ctv q8_0
+2026-08-24T15:44:45Z	pp-ngl	ngl999 r2	OK	Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf	64000	8192	128	2463.12	102.26	7545	15686	23231	18	-ngl 999 -sm layer -ts 13,28 -fa on -b 2048 -ub 512 -fit off -ctk q8_0 -ctv q8_0
+2026-08-24T15:45:06Z	pp-ngl	ngl41 r2	OK	Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf	64000	8192	128	1113.05	86.57	7069	15732	22801	21.5	-ngl 41 -sm layer -ts 13,28 -fa on -b 2048 -ub 512 -fit off -ctk q8_0 -ctv q8_0
+2026-08-24T15:45:25Z	pp-ngl	ngl999 r3	OK	Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf	64000	8192	128	2230.97	96.11	7545	15860	23405	18.5	-ngl 999 -sm layer -ts 13,28 -fa on -b 2048 -ub 512 -fit off -ctk q8_0 -ctv q8_0
+2026-08-24T15:45:47Z	pp-ngl	ngl41 r3	OK	Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf	64000	8192	128	1073.35	84.45	7069	15813	22882	22.2	-ngl 41 -sm layer -ts 13,28 -fa on -b 2048 -ub 512 -fit off -ctk q8_0 -ctv q8_0

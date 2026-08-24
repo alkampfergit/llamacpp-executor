@@ -307,6 +307,13 @@ IQ3_S tensors. Chapter 6 measured Q3_K_XL (15.69 GiB) generating at **94 t/s** a
 slower than Q4_K. The report evaluates quants purely on quality-per-byte and never once on
 kernel throughput. **On this box that axis has already cost 24% once.**
 
+> ⚠️ **Retracted by [chapter 16 §16.3](16-best-commandlines.md).** Those two files are different
+> fine-tunes from different publishers, so the 24% was never a kernel measurement. Three quants
+> of the same base model generate within **1.0%** of each other, and `UD-Q3_K_XL` posts the
+> **fastest prefill** of the three. The broader point — that a quant choice has a *throughput*
+> axis and not only a quality-per-byte one — still stands, and §16.3 supplies real evidence for
+> it: prefill varied **76%** across three quants of one model while generation did not move.
+
 ---
 
 ## 11.6 The arithmetic the report never does

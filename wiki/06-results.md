@@ -36,6 +36,11 @@ Two other findings worth stating up front:
 
 - **This Q4_K_M model generates faster than the smaller Q3_K_XL** — 117 vs 94 t/s. Q3_K CUDA
   kernels are slower than Q4_K. A smaller file is not a faster model.
+  > ⚠️ **The observation holds; the explanation is wrong.** See
+  > [chapter 16 §16.3](16-best-commandlines.md). These two files are different *fine-tunes*
+  > (unsloth Qwen3.6 vs Jackrong Qwopus), so the 24% gap is a model difference, not a kernel
+  > one. Three quants of the **same** base model generate at 90.5 / 91.5 / 91.3 t/s — a 1.0%
+  > spread. Do not cite this line as evidence about Q3_K kernels.
 - **Generation halves at depth.** 98–105 t/s on a short prompt, **~47 t/s** at 108k tokens.
   Every "tokens per second" claim you read online is a shallow-context number.
 

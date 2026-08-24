@@ -145,9 +145,26 @@ recording anything.
    succeeded via llama.cpp's non-pipelined fallback — it is `OK`, not `OOM`. 17 rows were once
    mislabelled this way and would have been discarded by anyone filtering on status.
 
+## "What should I run for model X?" — one file answers this
+
+**`.claude/skills/tuning-llamacpp-configs/references/best-commandlines.md` is the canonical
+table of best-known command lines per model**, two to four per model, with prefill/generation/
+peak-VRAM and a confidence grade on every row. Read it before composing a launch command by
+hand, and update it whenever a campaign produces a better config.
+
+- Grades: **A** = repeated, logged, rows in a `results.tsv`. **B** = single logged run, trust
+  the config not the digits. **C** = prose in a wiki chapter, no row — a starting point only.
+- `wiki/16-best-commandlines.md` is the companion chapter. It carries provenance, confounds and
+  the unmeasured-model inventory, and **deliberately does not repeat the commands** — one
+  source only, for the reason in "Scripts live in ONE place" above.
+- Only two models have grade-A/B data (Qwen3.8-27B dense, Qwopus3.6-35B-A3B MoE). A third is
+  grade C. **A dozen more GGUFs are on disk with no measurements at all** — do not invent a
+  command line for those; §4 of the reference gives the derivation order.
+
 ## Skills
 
 - `tuning-llamacpp-configs` — find optimal runtime flags (context, ubatch, split, KV type).
+  Its `references/best-commandlines.md` is the lookup table described above.
 - `building-llamacpp-cuda` — build from source. The plain `cmake -B build -DGGML_CUDA=ON …`
   from llama.cpp's docs **fails on this machine**; use the skill.
 

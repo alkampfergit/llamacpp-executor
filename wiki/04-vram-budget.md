@@ -209,6 +209,14 @@ Read that as a diagnosis: *"at these settings I must push about two layers' expe
 CPU."* If you see `-ot ... =CPU` in the output, your configuration does not fit — and now you
 know by roughly how much, before waiting for a load.
 
+> ### ⚠️ Do not copy its `-ngl` verbatim — change it to `-ngl 999`
+> Notice it emitted **`-ngl 41`**, and `n_layer_all` is 41 for this model. A model has
+> `n_layer_all` **+ 1** assignable slots (the blocks plus the output layer), so `-ngl 41` leaves
+> **one layer on the CPU** — measured at **−54% prefill** on this exact model, because every
+> token of a prefill batch then takes a host round-trip. It also silently switches off pipeline
+> parallelism, which is how the trap hides: you save ~450 MiB and lose half your prefill.
+> Always run with `-ngl 999`. See [chapter 17](17-pipeline-parallelism-ngl.md).
+
 `-fitt A,B` is the spare VRAM to leave per device. Use your §4.1 numbers.
 
 ### Its two limitations

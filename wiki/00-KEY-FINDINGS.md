@@ -274,9 +274,14 @@ cache. Right-sizing `-c` returns memory *and* speeds prefill up.
 
 ## 🎯 Other findings worth stating plainly
 
-**A smaller quant is NOT automatically faster.**
-Q3_K_XL (15.69 GiB) generated at ~94 t/s; Q4_K_M (20.21 GiB) at **117 t/s**. Q3_K CUDA
-kernels are slower than Q4_K. The bigger file was 24% faster.
+**A smaller quant is not *automatically* faster — but here it was.** ⚠️ **Corrected by
+[chapter 16 §16.3](16-best-commandlines.md).** This entry used to read "Q3_K CUDA kernels are
+slower than Q4_K; the bigger file was 24% faster", from 94 t/s (Q3_K_XL) against 117 t/s
+(Q4_K_M). Those were **two different fine-tunes from two different publishers**. Measured
+properly — three quants of the *same* base model, identical config, 3 reps each — generation is
+**90.5 / 91.5 / 91.3 t/s, a 1.0% spread**: quant-independent. And `UD-Q3_K_XL` had the
+**fastest prefill of the three** (+76% over one Q4_K_M) at 3.8 GiB less VRAM. Keep the caution,
+drop the kernel explanation.
 
 **`-ub` does nothing for generation.** 128 → 1024 moved prefill 1368 → 2651 t/s and
 generation 106 → 106 t/s. Generation has no batch. Never spend VRAM on `-ub` for chat.

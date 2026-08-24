@@ -51,6 +51,8 @@ and come back later when you want to know *why* it looks like that.
 | 13 | [The speculative-decoding landscape](13-speculative-decoding-landscape.md) | **DFlash2, DSpark and PFlash.** What `--spec-type` really does with a list (a priority cascade, not a sum), why an n-gram outranks your MTP head, why DFlash2 cannot fit at 130k here, and the one thing that beats every speedup in this wiki: **a speedup that competes with your prompt cache looks identical to one that composes with it — until the second request** |
 | 14 | [The build experiment](14-build-experiment.md) | **The first numbers in this wiki not produced by the shipped binaries.** Two self-compiled builds differing in exactly two flags: what `GGML_CUDA_FA_ALL_QUANTS` is worth (asymmetric KV, measured), what `GGML_SCHED_MAX_COPIES=1` is worth (not throughput — VRAM), and why the control must be a *rebuild* rather than the baseline |
 | 15 | [The MMVQ Ampere cap](15-mmvq-ampere-experiment.md) | **A refuted hypothesis, and the instrument that could not have found it.** DFlash2 is unmerged upstream and worth 1.15× at the only quant that fits. Chasing a kernel-selection cliff instead produced a custom CUDA patch, two sweeps, and +0.1% — because **87% of this harness's throughput variance was draft-acceptance luck** (r² = 0.872). Corrects the *shape* of §10.7's `n-max` curve, and records that llama.cpp's per-GPU kernel tables change greedy output |
+| 16 | [Best command lines, and what backs them](16-best-commandlines.md) | **The provenance ledger for every recommendation in this wiki.** The commands themselves live in one place — `.claude/skills/tuning-llamacpp-configs/references/best-commandlines.md` — graded A/B/C by how well each is actually evidenced. This chapter is what that grade *means*: which configs are repeated and logged, which are a single run, which are prose someone later quoted as fact, the twelve GGUFs on disk that have never been measured at all, and the fine-tune confound hiding inside chapter 6's "Q3_K kernels are slower than Q4_K" |
+| 17 | [You cannot turn off pipeline parallelism with `-ngl`](17-pipeline-parallelism-ngl.md) | **A correct mechanism with an unmeasured cost.** The fastest MoE config here gets its speed from an *allocation failing*, which chapters 6 and 7 call accidental. `cparams.pipeline_parallel` really is the switch, and `-ngl` really does reach it — but a model has `n_layer_all`+1 slots, so `-ngl n_layer_all` strands one layer on the CPU at **−54% prefill**. `-ngl 42` re-enables pipelining, because the gate *is* the full-offload test. The rebuild really is the only route, and this chapter withdraws a claim that it wasn't |
 
 ---
 
@@ -93,6 +95,8 @@ wiki/
 ├── 13-speculative-decoding-landscape.md
 ├── 14-build-experiment.md        ← CONTROL vs TREATMENT, self-compiled
 ├── 15-mmvq-ampere-experiment.md  ← a REFUTED result, and how the harness was lying
+├── 16-best-commandlines.md       ← provenance for the per-model command-line table
+├── 17-pipeline-parallelism-ngl.md ← a correct mechanism with an unmeasured cost
 ├── pre-build-plan.md             ← written BEFORE the build, so the design can be judged
 ├── nvidia-sysmem-fallback-paths.md
 └── benchmarks/

@@ -1,0 +1,12 @@
+run_utc	suite	label	status	model	ctx	npp	ntg	pp_ts	tg_ts	vram0	vram1	vram_total	secs	args
+2026-08-24T13:09:55Z	qwen36-quant	q36 C-lmstudio-Q4_K_M r1	OK	Qwen3.6-35B-A3B-Q4_K_M.gguf	32768	8192	128	1304.53	85.32	6485	15961	22446	30.7	-ngl 999 -sm layer -ts 12,29 -fa on -b 2048 -ub 512 -fit off -ctk q8_0 -ctv q8_0
+2026-08-24T13:10:15Z	qwen36-quant	q36 C-lmstudio-Q4_K_M r2	OK	Qwen3.6-35B-A3B-Q4_K_M.gguf	32768	8192	128	1952.48	98.78	6485	15852	22337	19.6	-ngl 999 -sm layer -ts 12,29 -fa on -b 2048 -ub 512 -fit off -ctk q8_0 -ctv q8_0
+2026-08-24T13:12:05Z	qwen36-quant-v2	v2 A-unsloth-Q3_K_XL r1	OK	Qwen3.6-35B-A3B-UD-Q3_K_XL.gguf	32768	8192	128	2748.14	91.23	5123	13156	18279	19.8	-ngl 999 -sm layer -ts 12,29 -fa on -b 2048 -ub 512 -fit off -ctk q8_0 -ctv q8_0
+2026-08-24T13:12:29Z	qwen36-quant-v2	v2 B-unsloth-Q4_K_S r1	OK	Qwen3.6-35B-A3B-UD-Q4_K_S.gguf	32768	8192	128	2525.16	92.53	6205	15782	21987	23.2	-ngl 999 -sm layer -ts 12,29 -fa on -b 2048 -ub 512 -fit off -ctk q8_0 -ctv q8_0
+2026-08-24T13:12:54Z	qwen36-quant-v2	v2 C-lmstudio-Q4_K_M r1	OK	Qwen3.6-35B-A3B-Q4_K_M.gguf	32768	8192	128	2078.75	100.04	6485	15848	22333	25.5	-ngl 999 -sm layer -ts 12,29 -fa on -b 2048 -ub 512 -fit off -ctk q8_0 -ctv q8_0
+2026-08-24T13:13:15Z	qwen36-quant-v2	v2 A-unsloth-Q3_K_XL r2	OK	Qwen3.6-35B-A3B-UD-Q3_K_XL.gguf	32768	8192	128	2801.92	88.31	5123	13053	18176	20.6	-ngl 999 -sm layer -ts 12,29 -fa on -b 2048 -ub 512 -fit off -ctk q8_0 -ctv q8_0
+2026-08-24T13:13:40Z	qwen36-quant-v2	v2 B-unsloth-Q4_K_S r2	OK	Qwen3.6-35B-A3B-UD-Q4_K_S.gguf	32768	8192	128	2456.55	89.24	6205	15823	22028	24.1	-ngl 999 -sm layer -ts 12,29 -fa on -b 2048 -ub 512 -fit off -ctk q8_0 -ctv q8_0
+2026-08-24T13:14:08Z	qwen36-quant-v2	v2 C-lmstudio-Q4_K_M r2	OK	Qwen3.6-35B-A3B-Q4_K_M.gguf	32768	8192	128	1361.42	79.47	6485	15959	22444	27.9	-ngl 999 -sm layer -ts 12,29 -fa on -b 2048 -ub 512 -fit off -ctk q8_0 -ctv q8_0
+2026-08-24T13:14:27Z	qwen36-quant-v2	v2 A-unsloth-Q3_K_XL r3	OK	Qwen3.6-35B-A3B-UD-Q3_K_XL.gguf	32768	8192	128	2782.61	92.02	5123	13242	18365	19.7	-ngl 999 -sm layer -ts 12,29 -fa on -b 2048 -ub 512 -fit off -ctk q8_0 -ctv q8_0
+2026-08-24T13:14:52Z	qwen36-quant-v2	v2 B-unsloth-Q4_K_S r3	OK	Qwen3.6-35B-A3B-UD-Q4_K_S.gguf	32768	8192	128	2305.05	92.64	6205	15886	22091	23.9	-ngl 999 -sm layer -ts 12,29 -fa on -b 2048 -ub 512 -fit off -ctk q8_0 -ctv q8_0
+2026-08-24T13:15:19Z	qwen36-quant-v2	v2 C-lmstudio-Q4_K_M r3	OK	Qwen3.6-35B-A3B-Q4_K_M.gguf	32768	8192	128	1297.48	94.49	6485	15979	22464	27.6	-ngl 999 -sm layer -ts 12,29 -fa on -b 2048 -ub 512 -fit off -ctk q8_0 -ctv q8_0
