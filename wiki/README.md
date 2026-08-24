@@ -50,6 +50,7 @@ and come back later when you want to know *why* it looks like that.
 | 12 | [Auditing a *build* report](12-build-flags-analysis.md) | Which `cmake` flags actually change the binary — and how `cuobjdump` settled in four seconds what a rebuild would have taken ninety minutes to answer. Half the flags in a third-party report are already the default; one of ours does not exist |
 | 13 | [The speculative-decoding landscape](13-speculative-decoding-landscape.md) | **DFlash2, DSpark and PFlash.** What `--spec-type` really does with a list (a priority cascade, not a sum), why an n-gram outranks your MTP head, why DFlash2 cannot fit at 130k here, and the one thing that beats every speedup in this wiki: **a speedup that competes with your prompt cache looks identical to one that composes with it — until the second request** |
 | 14 | [The build experiment](14-build-experiment.md) | **The first numbers in this wiki not produced by the shipped binaries.** Two self-compiled builds differing in exactly two flags: what `GGML_CUDA_FA_ALL_QUANTS` is worth (asymmetric KV, measured), what `GGML_SCHED_MAX_COPIES=1` is worth (not throughput — VRAM), and why the control must be a *rebuild* rather than the baseline |
+| 15 | [The MMVQ Ampere cap](15-mmvq-ampere-experiment.md) | **A refuted hypothesis, and the instrument that could not have found it.** DFlash2 is unmerged upstream and worth 1.15× at the only quant that fits. Chasing a kernel-selection cliff instead produced a custom CUDA patch, two sweeps, and +0.1% — because **87% of this harness's throughput variance was draft-acceptance luck** (r² = 0.872). Corrects the *shape* of §10.7's `n-max` curve, and records that llama.cpp's per-GPU kernel tables change greedy output |
 
 ---
 
@@ -91,6 +92,7 @@ wiki/
 ├── 12-build-flags-analysis.md
 ├── 13-speculative-decoding-landscape.md
 ├── 14-build-experiment.md        ← CONTROL vs TREATMENT, self-compiled
+├── 15-mmvq-ampere-experiment.md  ← a REFUTED result, and how the harness was lying
 ├── pre-build-plan.md             ← written BEFORE the build, so the design can be judged
 ├── nvidia-sysmem-fallback-paths.md
 └── benchmarks/

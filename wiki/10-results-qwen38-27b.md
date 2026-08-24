@@ -277,6 +277,16 @@ The baseline reproduced at 22.42 and 22.55 t/s across three separate campaigns, 
 not a baseline artefact. The curve rises steeply to `n-max 3–4` and then plateaus; the n5 row is
 7% low and n6 is 6% low, both within the noise floor of a machine that is also driving a display.
 
+> ### ⚠️ The SHAPE of this curve is not trustworthy — see [chapter 15 §15.6](15-mmvq-ampere-experiment.md)
+> Every row above is **one run at `temperature 0.6`**. Chapter 15 measured the run-to-run spread
+> of exactly this harness and configuration and found **±20%**, with
+> **r² = 0.872 between throughput and draft acceptance** — because a different sampled token
+> sequence accepts a different fraction of drafts. The `~2x` headline and the baseline are
+> solid (the baseline has now reproduced six times across two binaries, 21.95–22.68 t/s). The
+> per-`n-max` ordering, the n5 dip, and the apparent optimum at n4/n8 are **sampling luck**.
+> Re-measured at greedy on build 10585, n6/n7/n8 came out 55.7 / 53.2 / 54.9 — flat within
+> noise. **Do not pick `n-max` off this table**; if it matters, re-run with `-Temperature 0`.
+
 **Acceptance falls as `n-max` rises, and that is fine.** From n1 to n8, acceptance drops from 89%
 to 52% while the mean accepted run grows from 1.9 to 5.1 tokens. End-to-end throughput — the only
 thing that matters — plateaus. This is exactly why the skill insists you judge drafting on

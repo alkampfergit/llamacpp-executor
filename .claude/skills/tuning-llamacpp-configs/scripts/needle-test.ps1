@@ -45,10 +45,32 @@ param(
   [int]    $Port = 9077,
   [Parameter(Mandatory=$true)][string] $Model,
   [int]    $Records = 3000,
-  [string] $OutDir
+  [string] $OutDir,
+
+  # Which build to measure. See Find-LlamaDir below -- without this the walk-up
+  # silently selects the BASELINE binaries even when you meant a fresh build.
+  [string] $LlamaDir
 )
 
-$LC       = $($d=$PSScriptRoot; for($i=0;$i -lt 6 -and $d;$i++){ if(Test-Path (Join-Path $d 'llama-server.exe')){break}; $d=Split-Path $d -Parent }; if(-not $d){throw 'llama-server.exe not found'}; $d)
+# Locate the llama-server.exe to measure. Same contract as bench-harness.ps1 and
+# vram-budget.ps1: -LlamaDir wins, otherwise walk up from this script. NOTE that
+# the walk-up lands on the BASELINE root in this repo, so pass -LlamaDir to
+# measure a fresh build, e.g. -LlamaDir S:/OsDevelop/llamacpp/llama.cpp/build-mmvq/bin
+function Find-LlamaDir {
+  param([string] $Explicit)
+  if ($Explicit) {
+    $r = (Resolve-Path $Explicit -ErrorAction SilentlyContinue).Path
+    if ($r -and (Test-Path (Join-Path $r 'llama-server.exe'))) { return $r }
+    throw "llama-server.exe not found in -LlamaDir '$Explicit'"
+  }
+  $dir = $PSScriptRoot
+  for ($i = 0; $i -lt 6 -and $dir; $i++) {
+    if (Test-Path (Join-Path $dir 'llama-server.exe')) { return $dir }
+    $dir = Split-Path $dir -Parent
+  }
+  throw "Could not locate llama-server.exe. Pass -LlamaDir explicitly."
+}
+$LC       = Find-LlamaDir -Explicit $LlamaDir
 # Portable default is bench-results/ next to the binaries; pass -OutDir to land this
 # repo's own campaign in wiki/benchmarks/ instead (see CLAUDE.md).
 $benchDir = if ($OutDir) { $OutDir } else { Join-Path $LC 'bench-results' }
@@ -116,8 +138,28 @@ try {
 }
 $wall = [math]::Round($sw.Elapsed.TotalSeconds,1)
 
-$answer  = (($r.choices[0].message.content) -replace '\s+',' ').Trim()
-$verdict = if ($answer -match 'CRIMSON[-\s]?PELICAN[-\s]?4417') { 'PASS' } else { 'FAIL' }
+# A quality gate must not crash, and must not report FAIL for a response it could
+# not read -- that conflates "the model missed the needle" with "the harness could
+# not parse the payload", which is the same mislabelling trap as calling a
+# fallback-recovered run OOM. `$r.choices[0]` throws "Cannot index into a null
+# array" when `choices` is absent, and @($null).Count is 1, so the null check is
+# load-bearing. Unusable payload -> explicit ERROR, never a silent absence.
+$answer   = ''
+$unusable = $true
+if ($r.PSObject.Properties['choices'] -and $null -ne $r.choices -and @($r.choices).Count -gt 0) {
+  $content = $r.choices[0].message.content
+  if ($null -ne $content) {
+    $answer   = (([string]$content) -replace '\s+',' ').Trim()
+    $unusable = $false
+  }
+}
+$verdict = if ($unusable) { 'ERROR' }
+           elseif ($answer -match 'CRIMSON[-\s]?PELICAN[-\s]?4417') { 'PASS' }
+           else { 'FAIL' }
+if ($unusable) {
+  Write-Host "[$Label] response carried no usable choices[].message.content -- verdict ERROR, not FAIL" `
+    -ForegroundColor Yellow
+}
 $ppN     = if ($r.timings.prompt_n) { $r.timings.prompt_n } else { $r.usage.prompt_tokens }
 
 Write-Host ("[$Label] needle={0}  depth={1}  PP={2} t/s  TG={3} t/s  wall={4}s" -f `

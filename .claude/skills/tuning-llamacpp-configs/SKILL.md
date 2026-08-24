@@ -302,7 +302,11 @@ Steps 3, 4 and 6 are counter-intuitive and are usually the answer:
   `references/parameter-effects.md`.
 - **Speculative decoding must be justified per model, never assumed.** On a sparse MoE it was a
   **net loss** (−7% at `n-max 1`, −29% at `n-max 2`) *despite 67–72% acceptance*; on a dense 27 B
-  it was **+110%** (22.4 → 47.1 t/s at `n-max 4`). Each drafted token costs roughly a full
+  it was **+110%** (22.4 → 47.1 t/s at `n-max 4`). The *magnitude* is solid — the baseline has
+  reproduced six times across two binaries — but the **best `n-max` is not established**: that
+  sweep ran one point per value at `temperature 0.6`, where throughput tracks resampled draft
+  acceptance at r² = 0.872 and the spread is ±20%. **Sweep `n-max` with `-Temperature 0` or do
+  not sweep it at all.** Each drafted token costs roughly a full
   forward pass, so it pays only when that pass is expensive. **High acceptance is not a win;
   only end-to-end tokens/second is.** Also note it *costs* prefill (−27% measured) and a second
   graph reservation (~1.1 GiB), and its gain shrinks with depth (2.0× shallow → ~1.5× at 108k).

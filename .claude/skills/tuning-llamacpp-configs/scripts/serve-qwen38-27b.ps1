@@ -70,7 +70,15 @@ if ($cfg.Mtp) {
   # The MTP head is blk.64. Without this flag the log says "unused tensor
   # blk.64.* -- ignoring" and the head costs nothing; with it, the head costs
   # ~1.1 GiB (a SECOND graph reservation for the draft context) and doubles
-  # generation. n-max 3..8 all plateau; 4 is the measured sweet spot.
+  # generation.
+  #
+  # n-max 4 is a SAFE value on the plateau, not a proven optimum. The sweep it
+  # came from was one run per point at temperature 0.6, where run-to-run spread
+  # is +-20% because draft acceptance is resampled every run (wiki chapter 15
+  # measured r^2 = 0.872 between acceptance and throughput). n-max 3..8 are
+  # indistinguishable at that precision. Keeping 4 deliberately: re-tuning off
+  # noisy data would be the same mistake in the other direction. If you need the
+  # real optimum, sweep with mtp-test.ps1 -Temperature 0.
   $argv += @('--spec-type', 'draft-mtp', '--spec-draft-n-max', '4')
 }
 
