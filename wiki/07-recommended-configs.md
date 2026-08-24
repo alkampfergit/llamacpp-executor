@@ -141,7 +141,11 @@ window for 26% of the speed is the best trade in this entire wiki.
 spare, so `f16` KV and `-ub 512` both fit.
 **Status:** the 130k load is **proven**; `llama-bench` measured 3107–3206 t/s prefill and
 ~94 t/s generation. `-ts` below is a **starting point** — verify.
-**Gives up:** Q3 quality, and ~20% generation speed versus Q4_K_M (117 → 94 t/s).
+**Gives up:** Q3 quality — and **nothing else.** ⚠️ This line used to claim "~20% generation
+speed versus Q4_K_M (117 → 94 t/s)". That comparison crossed a fine-tune boundary. Measured
+against Q4 quants of the *same* base model, generation is within **1.0%** and this file has the
+**fastest prefill of the three** at 3.8 GiB less VRAM. See
+[chapter 16 §16.3](16-best-commandlines.md).
 
 ```powershell
 cd S:\OsDevelop\llamacpp
@@ -176,7 +180,7 @@ GPU, which is the binding constraint.
 | `-ub 1024` with `q8_0` at 115k–123k | Saturates the display GPU → spills to system RAM, 1036 t/s | §6.5 |
 | `-np 4` with `-c 130048` for one user | Each request capped at 32512 tokens | §2.4 |
 | `-mg 1` with `-sm layer` | No effect | §3.1 |
-| Assuming a smaller quant is faster | Q3_K_XL generates *slower* than Q4_K_M | §6.1 |
+| Assuming a smaller quant is faster | Sometimes true, but ⚠️ **not for the reason §6.1 gives** — same-base-model quants generate within 1.0%, and Q3_K_XL prefills *fastest* | [§16.3](16-best-commandlines.md) |
 | Tuning before the sysmem policy is set | You will measure overflow, not speed | §5.3 |
 
 ---

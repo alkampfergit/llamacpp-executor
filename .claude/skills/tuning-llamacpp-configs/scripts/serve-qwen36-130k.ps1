@@ -4,9 +4,18 @@
 #  The comfortable option. At 15.69 GiB the model leaves ~2.5 GiB spare, so
 #  you can keep f16 KV cache AND -ub 512 -- no compromises needed.
 #
-#  Trade-off: Q3 quality, and ~20% slower GENERATION than the Q4_K_M model
-#  (94 t/s vs 117 t/s) because Q3_K CUDA kernels are slower than Q4_K ones.
-#  A smaller file is not automatically a faster model.
+#  Trade-off: Q3 quality. THAT IS ALL.
+#
+#  This header used to claim "~20% slower GENERATION than the Q4_K_M model
+#  (94 t/s vs 117 t/s) because Q3_K CUDA kernels are slower than Q4_K ones."
+#  That comparison crossed a fine-tune boundary -- 94 was this file, 117 was
+#  Jackrong's Qwopus, a different model from a different publisher.
+#
+#  Measured properly (3 quants of the SAME base model, identical config, 3 reps,
+#  wiki chapter 16.3): generation is 90.5 / 91.5 / 91.3 t/s -- a 1.0% spread, so
+#  quant-independent. And this file has the FASTEST PREFILL of the three:
+#  2778 t/s vs 2429 (UD-Q4_K_S) and 1579 (lmstudio Q4_K_M), at ~3.8 GiB less
+#  VRAM. On this box the smaller quant is strictly faster.
 # ===========================================================================
 param(
   [int]    $Port = 9010,

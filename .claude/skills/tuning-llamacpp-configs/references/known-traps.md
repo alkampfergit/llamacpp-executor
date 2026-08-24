@@ -249,7 +249,7 @@ largely reproduces the input.
 | `-mg` with `-sm layer` | No effect. Delete it. |
 | `-ub 1024` / `2048` | Double the memory for no prefill gain past 512. |
 | `-c 262144` "for headroom" | Taxes prefill ~31% even on short prompts. |
-| "Smaller quant is faster" | Q3_K CUDA kernels are slower than Q4_K. A smaller file can generate more slowly. |
+| "Smaller quant is faster" (or slower) | **Measure it.** The old "Q3_K kernels are slower than Q4_K" line compared two different fine-tunes. Same-base-model quants generate within **1.0%**; what quant moves is **prefill (76% spread) and VRAM (3.8 GiB)**, and the smallest file won both. `references/best-commandlines.md` §3. |
 | Tuning with `llama-bench` | No `-c` flag, so it never allocates the real KV cache. |
 | Multi-value sweep in one process | VRAM fragmentation; later runs read slower. |
 | `--cache-prompt`, `-kvo` | Accepted but no-ops in current builds; the behaviour is now default. |

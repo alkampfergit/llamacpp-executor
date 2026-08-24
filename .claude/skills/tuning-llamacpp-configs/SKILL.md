@@ -326,8 +326,12 @@ Steps 3, 4 and 6 are counter-intuitive and are usually the answer:
   wearing a different hat.
 - `model has unused tensor blk.N... -- ignoring` on an MTP/draft model is expected; those
   weights cost nothing until a `--spec-type` activates them, and then they cost real VRAM.
-- Do **not** assume a smaller quant is faster. Q3_K CUDA kernels are slower than Q4_K, so
-  a smaller file can generate more slowly.
+- Do **not** assume a smaller quant is faster **or** slower — measure it. The old claim here
+  ("Q3_K CUDA kernels are slower than Q4_K") came from comparing two different *fine-tunes*.
+  Three quants of one base model, identical config, 3 reps each: generation **90.5 / 91.5 /
+  91.3 t/s — a 1.0% spread**, while **prefill varied 76%** (2778 / 2429 / 1579) and VRAM by
+  3.8 GiB. So the axis that quant actually moves is **prefill and VRAM, not generation** — and
+  the smallest file won on both. See `references/best-commandlines.md` §3.
 - Speculative decoding (`--spec-type`) cannot be measured with either bench tool. It needs
   `llama-server` over HTTP, and its benefit is workload-dependent.
 
