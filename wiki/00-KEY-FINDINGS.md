@@ -109,8 +109,9 @@ than recommended — there is no quality evidence for any of them.
 ## 💡 A SMALLER KV cache can be FASTER
 
 Counter-intuitive and worth internalising: `q4_0` KV is ~700 MiB smaller than `q8_0`, and that
-freed headroom is exactly what lets `-ub` go from 512 to 1024 — which in turn triggers the
-fast non-pipelined path. **The two effects compound:**
+freed headroom is exactly what lets `-ub` go from 512 to 1024. The larger ubatch is faster and
+the tighter allocation happens to recover through a one-copy retry; chapter 18 separates those
+effects.
 
 | KV | `-ub` | Prefill |
 | --- | --- | --- |
@@ -173,25 +174,29 @@ machine with an ±8% noise floor.
 
 ---
 
-## 🔀 Pipeline parallelism is a LOSS on mismatched GPUs
+## 🔀 The fallback saves memory; the tensor split made this model faster
 
-With >1 GPU, llama.cpp keeps 4 copies of intermediate activations so devices can overlap. On
-a mismatched pair that is a double loss: the pipeline stalls on the slower card, **and** the
-extra copies are what break the fit.
+With >1 GPU, llama.cpp can keep 4 copies of intermediate activations. Those copies can break a
+tight fit, after which llama.cpp retries with one copy. The old table below is a real pair of
+measurements but **not** a pipeline A/B: KV type, ubatch, context pressure and execution mode all
+changed together.
 
 | Path | Prefill | Generation |
 | --- | --- | --- |
 | pipelined (default) | 1850 t/s | 98 t/s |
 | **non-pipelined** | **2650 t/s** | **105 t/s** |
 
-Reproducible: 2757 / 2599 / 2594 across three runs (±3%).
+The 2650 endpoint is reproducible: 2757 / 2599 / 2594 across three runs (±3%). Its old causal
+label is not.
 
-We found it by accident — a run whose pipelined buffers didn't fit printed
-`retrying without pipeline parallelism` and then *beat* every properly-pipelined run.
+Controlled Qwopus results in [chapter 18](18-fallback-causality.md) show:
 
-> **When your error-recovery path outruns your happy path, adopt the error-recovery path.**
-> Deliberately: rebuild with `-DGGML_SCHED_MAX_COPIES=1`. Accidentally (what we do today):
-> raise `-ub` until the pipelined reserve fails.
+- runtime fallback versus a one-copy build at identical `c64000 / ub512 / ts13,28`: **1.6%**
+  apart, below noise;
+- `ts13,28` versus `ts12,29` with scheduler mode fixed: **+12.8% prefill**.
+
+> Treat a successful retry as a valid recovered run, not as a tuning target. Optimise the split
+> and headroom directly; do not manufacture an allocation failure to chase speed.
 
 ---
 
@@ -347,9 +352,9 @@ Full commands and the reasoning: [Chapter 7](07-recommended-configs.md).
 > Blackwell **12.0**, not Ada 8.9 — a prior build here used `86;89` and silently JIT-compiled
 > for the faster card). See chapter 7 §7.5 and the `building-llamacpp-cuda` skill.
 
-- `GGML_SCHED_MAX_COPIES=1` makes the fast non-pipelined path **deterministic** instead of a
-  side effect of running out of memory — and should let `q8_0` KV run at `-ub 1024` at full
-  130k, i.e. quality-first speed *and* speed-first speed together.
+- `GGML_SCHED_MAX_COPIES=1` reduces scheduler-copy memory deterministically. Controlled `ub512`
+  tests show no material throughput gain; chapter 18 also records the small source-level
+  difference between this build setting and the runtime retry.
 - `GGML_CUDA_FA_ALL_QUANTS=ON` unlocks `-ctk q8_0 -ctv q4_0`: precise keys, compact values.
 
 **Untested. This is the top open item.**
@@ -357,4 +362,3 @@ Full commands and the reasoning: [Chapter 7](07-recommended-configs.md).
 ---
 
 ← Back to the [index](README.md) · Full data: [Chapter 6](06-results.md)
-

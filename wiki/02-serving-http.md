@@ -334,7 +334,8 @@ To stop it:
 Get-Process llama-server -ErrorAction SilentlyContinue | Stop-Process
 ```
 
-Ready-made scripts are in [`scripts/`](scripts/).
+Ready-made scripts are in
+[`../.claude/skills/tuning-llamacpp-configs/scripts/`](../.claude/skills/tuning-llamacpp-configs/scripts/).
 
 ---
 

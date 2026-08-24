@@ -71,6 +71,10 @@ install/
 wiki/benchmarks/server.log
 bench-results/
 
+# Repo-local Codex discovery links. On Windows these are directory junctions into
+# .claude/skills; committing them would duplicate the linked trees with core.symlinks=false.
+/.agents/
+
 # ---------------------------------------------------------------------------
 #  Windows cruft. This folder USED to live inside OneDrive, which dropped
 #  desktop.ini files around and created conflicted copies. It now lives at

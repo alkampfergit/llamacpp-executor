@@ -131,9 +131,10 @@ And that is exactly what happens in practice — measured peak usage 23606 MiB a
 cards, and it runs. (The measured figure is higher than the arithmetic because
 `nvidia-smi` includes the desktop's own usage in the same number.)
 
-> **This is the central result for this model.** Q4_K_M at 130k fits with **zero** CPU
-> offload, but only at `-ub 256`, and only with `q8_0` KV. Every gigabyte matters, and the
-> arithmetic above tells you *which* gigabyte to go after.
+> **Historical first-fit result, not the final ceiling.** This proved full GPU offload at 130k.
+> Later runs found `q8_0` KV at `-ub 512` and `q4_0` KV at `-ub 1024`; the original "only"
+> wording was stale. Every gigabyte still matters, and the arithmetic tells you which component
+> to change before measuring the real boundary.
 
 ### The four ways to close a gap, best first
 
@@ -141,8 +142,8 @@ cards, and it runs. (The measured figure is higher than the arithmetic because
 | --- | --- | --- |
 | **Close GPU-using desktop apps** | up to ~1.5 GiB | **none** |
 | `-ctk q8_0 -ctv q8_0` instead of f16 | 1200 MiB | ~2% |
-| `-ctk q4_0 -ctv q4_0` instead of q8_0 | ~700 MiB | **negative — it's faster** (but see quality, §6.4) |
-| Rebuild `-DGGML_SCHED_MAX_COPIES=1` | several hundred MiB | **negative — it's faster** |
+| `-ctk q4_0 -ctv q4_0` instead of q8_0 | ~700 MiB | small directly; may enable a faster `-ub` (quality-gate it) |
+| Rebuild `-DGGML_SCHED_MAX_COPIES=1` | several hundred MiB at `ub512` | no material `ub512` speed change (ch.18) |
 | Reduce `-c` (e.g. 130048 → 126976) | 11 MiB per 1000 tokens | *gains* prefill speed (+26%) |
 | `-ub 512` → `256` | 819 MiB | −21% prefill |
 | `-ncmoe 2` | ~1000 MiB | **−69% prefill** ✗ |
@@ -151,8 +152,7 @@ cards, and it runs. (The measured figure is higher than the arithmetic because
 > `GGML_SCHED_MAX_COPIES` is **not** a runtime environment variable — it is a compile-time
 > define. See §6.2.
 
-Work down that list in order. The first three are free or better than free. The last two are
-traps that look attractive on paper.
+Work down that list in order, then measure. The last two are traps that look attractive on paper.
 
 ---
 
@@ -260,4 +260,3 @@ Two failure signatures to recognise:
 ---
 
 Next: [Chapter 5 — Benchmarking honestly](05-benchmarking.md).
-

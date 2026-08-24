@@ -1,0 +1,4 @@
+run_utc	suite	label	status	execution_mode	notes	model	ctx	npp	ntg	pp_ts	tg_ts	vram0	vram1	vram_total	secs	args
+2026-08-24T16:18:16Z	scheduler-copies-ab	control-max4 r1	OOM	fallback-failed	NO-PIPELINE-FALLBACK	Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf	32768	8192	128			7491	15034	22525	29.3	-ngl 999 -sm layer -ts 14,27 -fa on -b 2048 -ub 512 -fit off -ctk q8_0 -ctv q8_0
+2026-08-24T16:18:31Z	scheduler-copies-ab	single-copy-max1 r1	OOM	fallback-failed	NO-PIPELINE-FALLBACK	Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf	32768	8192	128			7491	15165	22656	14.5	-ngl 999 -sm layer -ts 14,27 -fa on -b 2048 -ub 512 -fit off -ctk q8_0 -ctv q8_0
+2026-08-24T16:18:45Z	scheduler-copies-ab	control-max4 r2	OOM	fallback-failed	NO-PIPELINE-FALLBACK	Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf	32768	8192	128			7491	15178	22669	13.7	-ngl 999 -sm layer -ts 14,27 -fa on -b 2048 -ub 512 -fit off -ctk q8_0 -ctv q8_0

@@ -49,6 +49,18 @@ $Global:LCB_MODEL = $Model
 $Global:LCB_OUT   = if ($OutDir) { $OutDir } else { Join-Path $LCB_DIR 'bench-results' }
 $Global:LCB_LOGS  = Join-Path $LCB_OUT 'logs'
 $Global:LCB_TSV   = Join-Path $LCB_OUT 'results.tsv'
+$Global:LCB_MAX_COPIES = $null
+
+# A local build records this compile-time setting in its CMake cache.  The
+# shipped binaries have no cache beside them, so leave the value unknown there.
+$cmakeCache = Join-Path (Split-Path $Global:LCB_DIR -Parent) 'CMakeCache.txt'
+if (Test-Path $cmakeCache) {
+  $maxCopiesLine = Select-String -Path $cmakeCache -Pattern '^GGML_SCHED_MAX_COPIES:[^=]+=(\d+)$' |
+    Select-Object -First 1
+  if ($maxCopiesLine -and $maxCopiesLine.Matches[0].Groups[1].Success) {
+    $Global:LCB_MAX_COPIES = [int]$maxCopiesLine.Matches[0].Groups[1].Value
+  }
+}
 
 # A freshly built llama.cpp exe exits INSTANTLY WITH NO OUTPUT AT ALL when the
 # CUDA runtime DLLs are not resolvable -- there is no error message to diagnose,
@@ -96,9 +108,10 @@ if (-not $cudartFound) {
 }
 New-Item -ItemType Directory -Force -Path $LCB_LOGS | Out-Null
 if (-not (Test-Path $LCB_TSV)) {
-  "run_utc`tsuite`tlabel`tstatus`tmodel`tctx`tnpp`tntg`tpp_ts`ttg_ts`tvram0`tvram1`tvram_total`tsecs`targs" |
+  "run_utc`tsuite`tlabel`tstatus`texecution_mode`tnotes`tmodel`tctx`tnpp`tntg`tpp_ts`ttg_ts`tvram0`tvram1`tvram_total`tsecs`targs" |
     Out-File -Encoding utf8 $LCB_TSV
 }
+$Global:LCB_EXTENDED_TSV = (Get-Content -LiteralPath $LCB_TSV -TotalCount 1) -match '\texecution_mode\t'
 
 # nvidia-smi's own "-f file" logging buffers on Windows and often produces an
 # empty file for short runs, so poll it from a background job instead.
@@ -211,25 +224,46 @@ function Probe {
   if ($pp -ne '' -and $status -eq 'OOM') { $status = 'OK'; $notes += 'RECOVERED-AFTER-OOM' }
   if ($pp -eq '' -and $status -eq 'OK') { $status = 'FAIL' }
 
+  # Do not turn an observed fallback into a throughput explanation.  This field
+  # records what happened; causality needs a controlled A/B with identical args.
+  $executionMode = if (($notes -contains 'NO-PIPELINE-FALLBACK') -and $pp -eq '') {
+    'fallback-failed'
+  } elseif ($notes -contains 'NO-PIPELINE-FALLBACK') {
+    'fallback-single-copy'
+  } elseif ($Global:LCB_MAX_COPIES -eq 1) {
+    'single-copy-build'
+  } else {
+    'no-fallback-observed'
+  }
+
   $p0 = if ($peak.ContainsKey(0)) { $peak[0] } else { 0 }
   $p1 = if ($peak.ContainsKey(1)) { $peak[1] } else { 0 }
   $pt = ($peak.Values | Measure-Object -Sum).Sum
 
   # Flush this single run before the next one starts.
-  Add-Content -Path $Global:LCB_TSV -Value (@(
-    (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ'),
-    $Suite, $Label, $status, (Split-Path $Model -Leaf), $Ctx, $Npp, $Ntg,
-    $pp, $tg, $p0, $p1, $pt, $secs, ($A -join ' ')
-  ) -join "`t")
+  if ($Global:LCB_EXTENDED_TSV) {
+    Add-Content -Path $Global:LCB_TSV -Value (@(
+      (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ'),
+      $Suite, $Label, $status, $executionMode, ($notes -join ' '),
+      (Split-Path $Model -Leaf), $Ctx, $Npp, $Ntg,
+      $pp, $tg, $p0, $p1, $pt, $secs, ($A -join ' ')
+    ) -join "`t")
+  } else {
+    # Keep existing evidence files readable with their historical header.
+    Add-Content -Path $Global:LCB_TSV -Value (@(
+      (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ'),
+      $Suite, $Label, $status, (Split-Path $Model -Leaf), $Ctx, $Npp, $Ntg,
+      $pp, $tg, $p0, $p1, $pt, $secs, ($A -join ' ')
+    ) -join "`t")
+  }
 
   Write-Host ("{0,-30} {1,-4} PP={2,9} TG={3,8}  VRAM {4,5}/{5,5}={6,5} MiB  {7,6}s {8}" -f `
     $Label, $status, $pp, $tg, $p0, $p1, $pt, $secs, ($notes -join ' '))
 
   if ($notes -contains 'NO-PIPELINE-FALLBACK') {
-    Write-Host "   ^ fell back to non-pipelined execution: this is NOT the config you asked for." -ForegroundColor Yellow
-    Write-Host "     If it is fast, that IS the fast path here. To make it deliberate rather" -ForegroundColor Yellow
-    Write-Host "     than accidental, rebuild with -DGGML_SCHED_MAX_COPIES=1 (compile-time;" -ForegroundColor Yellow
-    Write-Host "     the environment variable of that name does nothing)." -ForegroundColor Yellow
+    Write-Host "   ^ the pipelined reserve failed, but the single-copy retry succeeded." -ForegroundColor Yellow
+    Write-Host "     This is a valid recovered run with different memory behavior. Do not" -ForegroundColor Yellow
+    Write-Host "     attribute any speed change to the fallback without an identical-args A/B." -ForegroundColor Yellow
   }
   if ($notes -contains 'CPU-TENSORS') {
     Write-Host "   ^ tensors on CPU: expect a large prefill penalty on MoE models." -ForegroundColor Yellow
@@ -237,7 +271,8 @@ function Probe {
 
   return [pscustomobject]@{
     Label = $Label; Status = $status; PP = $pp; TG = $tg
-    V0 = $p0; V1 = $p1; VT = $pt; Secs = $secs; Notes = ($notes -join ' '); Args = ($A -join ' ')
+    V0 = $p0; V1 = $p1; VT = $pt; Secs = $secs; ExecutionMode = $executionMode
+    Notes = ($notes -join ' '); Args = ($A -join ' ')
   }
 }
 
@@ -246,7 +281,7 @@ function Show-BenchResults {
   Import-Csv -Delimiter "`t" $Global:LCB_TSV |
     Where-Object { $_.status -eq 'OK' } |
     Sort-Object { [double]$_.pp_ts } -Descending |
-    Select-Object -First $Top suite, label, ctx, npp, pp_ts, tg_ts, vram_total |
+    Select-Object -First $Top suite, label, execution_mode, ctx, npp, pp_ts, tg_ts, vram_total |
     Format-Table -AutoSize
   Write-Host "Full data: $Global:LCB_TSV"
 }

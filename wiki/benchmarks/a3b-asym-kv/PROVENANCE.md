@@ -53,10 +53,9 @@ out to be **163840**, not 130048, which cut the claimed gain from ~50k tokens to
 
 1. **`build-fa` is slower than stock at an identical config.** Stock q8_0/q8_0 at c126976 was
    2323 t/s prefill / 109.1 t/s generation; `build-fa` q8_0/q8_0 is 2007 / 101.4. `build-fa`
-   also carries `GGML_SCHED_MAX_COPIES=1`, which disables pipeline parallelism — chapter 14
-   cleared that flag as costing 0%, but **measured it only on the dense 27B**. The asymmetric
-   gain and the build deficit roughly cancel. *Untested:* whether `build-control` (same source
-   and compiler, default flags) recovers the 2323, which would confirm the flag as the cause.
+   also carries `GGML_SCHED_MAX_COPIES=1`. Chapter 18 later tested matched rebuilds on this
+   Qwopus model: at `ub512`, one copy versus four changed prefill by only +1.8%. The old
+   stock-versus-build deficit is therefore not evidence against the scheduler flag.
 2. **`V=q4_0` has never been quality-gated on this model.** Chapter 11 argued keys tolerate
    quantisation worse than values, so `q8_0`/`q4_0` is the *right* asymmetric choice — but that
    is reasoning, not measurement.

@@ -34,9 +34,9 @@ if (-not (Test-Path $Model)) { throw "Model not found: $Model" }
 
 # Deliberately NOT set: $env:GGML_SCHED_MAX_COPIES.
 # It is a COMPILE-TIME #define, not a runtime variable -- setting it does
-# nothing. To disable pipeline parallelism deterministically, rebuild with
+# nothing. To use one scheduler copy deterministically, rebuild with
 #     cmake -B build -DGGML_CUDA=ON -DGGML_SCHED_MAX_COPIES=1
-# See wiki/06-results.md 6.2.
+# See wiki/18-fallback-causality.md.
 
 $argv = @(
   '-m', $Model

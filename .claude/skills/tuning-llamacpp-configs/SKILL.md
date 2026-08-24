@@ -174,8 +174,9 @@ The bundled harness enforces all five. Prefer running it over hand-rolling a loo
   `failed to`, and `ignoring`. A run that silently fell back to a different execution
   mode is not the configuration you think you measured.
 - **An OOM row is data.** It locates the boundary, which is what you are mapping.
-- If a fallback path outperforms the intended path, **adopt the fallback** and make it
-  explicit so the config is reproducible.
+- If a fallback path appears to outperform the intended path, record the mode and run an
+  identical-arguments A/B before assigning causality. A successful retry is valid data, not
+  automatically a tuning recommendation.
 
 ### 7. Validate over HTTP
 
@@ -266,10 +267,10 @@ judgement this skill encodes — the bottom two look attractive and are traps.
 | --- | --- | --- |
 | 1 | Close GPU-using desktop apps | **none** |
 | 2 | `q8_0/q8_0` instead of `f16/f16` | ~2% |
-| 3 | `q4_0/q4_0` instead of `q8_0/q8_0` (symmetric — still fast) | **negative — it is faster**, but **quality-gate it** |
+| 3 | `q4_0/q4_0` instead of `q8_0/q8_0` (symmetric — still fast) | usually small directly; may enable a faster `-ub`; **quality-gate it** |
 | 4 | Reduce `-c` a little (e.g. −2%) | **negative — prefill speeds up** |
 | 5 | `-ub` down one step | ~−20 to −30% prefill |
-| 6 | Rebuild `-DGGML_SCHED_MAX_COPIES=1` | **negative — it is faster** |
+| 6 | Rebuild `-DGGML_SCHED_MAX_COPIES=1` | saves scheduler memory; `ub512` speed effect measured below 2% |
 | 7 | `-ncmoe N` (experts to CPU) | **~−69% prefill for 2 of 40 layers** |
 
 Steps 3, 4 and 6 are counter-intuitive and are usually the answer:
@@ -279,12 +280,13 @@ Steps 3, 4 and 6 are counter-intuitive and are usually the answer:
   from 1850 to 2650 t/s. Only ever use a *symmetric compiled pair* (see traps).
 - **Context taxes prefill near the memory ceiling.** Dropping 2.4% of the window bought 26%
   more prefill. Right-sizing `-c` gives memory back *and* speeds prefill up.
-- **Pipeline parallelism is a loss on mismatched GPUs** — the pipeline stalls on the slower
-  card, and its 4 activation copies are often exactly what breaks the fit. But note:
+- **Scheduler copies can break a tight fit.** Do not generalise that into a throughput claim:
+  on the reference Qwopus `ub512` comparisons, runtime fallback and a one-copy build were only
+  1.6% apart, while changing the tensor split alone gave +12.8% prefill. Note:
   `GGML_SCHED_MAX_COPIES` is a **compile-time** define, **not** an environment variable.
   Setting `$env:GGML_SCHED_MAX_COPIES` does nothing. Either rebuild with
-  `-DGGML_SCHED_MAX_COPIES=1`, or raise `-ub` until the pipelined reserve fails and
-  llama.cpp falls back to the lean path on its own (see traps).
+  `-DGGML_SCHED_MAX_COPIES=1` when the memory saving is needed. Never raise `-ub` merely to
+  provoke an allocation failure (see traps and `wiki/18-fallback-causality.md`).
 
 ---
 
@@ -353,7 +355,12 @@ Load only what the current question needs.
 - `scripts/vram-budget.ps1` — hardware discovery, `-c` × `-ub` feasibility grid, candidate
   shortlist. **Run it; do not read it.**
 - `scripts/bench-harness.ps1` — dot-source, then call `Probe`. Fresh process per run, peak
-  VRAM sampling, append-only results, full log per run.
+  VRAM sampling, append-only results, full log per run, and explicit execution-mode recording
+  in new TSV files.
+- `scripts/scheduler-copies-ab.ps1` — interleaved matched-build A/B for scheduler copy count,
+  with an optional expected-runtime-fallback control.
+- `scripts/tensor-split-ab.ps1` — interleaved tensor-split A/B with build and all other runtime
+  arguments held fixed.
 - `scripts/needle-test.ps1` — long-context quality gate over HTTP. Run it before adopting
   any lossy KV setting, and to get real deep-context throughput.
 - `scripts/mtp-test.ps1` — speculative-decoding measurement over HTTP: baseline vs
@@ -365,8 +372,6 @@ binaries by default, overridable with `-OutDir`.
 
 Requires: llama.cpp CUDA build with `llama-fit-params.exe`, `llama-batched-bench.exe` and
 `llama-server.exe`; `nvidia-smi` on PATH; PowerShell 7+.
-
-
 
 
 

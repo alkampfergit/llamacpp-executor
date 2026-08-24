@@ -141,8 +141,9 @@ E graph_reserve: failed to allocate compute buffers
 W sched_reserve: compute buffer allocation failed, retrying without pipeline parallelism
 ```
 
-llama.cpp could not fit the pipeline-parallel buffers, silently retried **without pipeline
-parallelism**, and that mode is *faster on this hardware* (see §3.4).
+llama.cpp could not fit the larger scheduler reservation and retried with one copy. The run
+therefore changed execution mode. The original chapter inferred that the new mode was faster;
+chapter 18 later refuted that causal claim with identical-arguments A/Bs.
 
 So the second run was not a better configuration — it was a **different** one. The benchmark
 was honest; the configuration silently changed underneath it.
@@ -151,8 +152,9 @@ was honest; the configuration silently changed underneath it.
 > `retrying`, `out of memory`, `failed to`, and `ignoring`. The harness saves the full log of
 > every run for exactly this reason.
 
-This lie is also how the best finding in this whole campaign was discovered. When your
-fallback path outruns your intended path, that is not noise — that is the answer.
+This anomaly was still valuable: it forced the execution mode into the evidence. When a
+fallback appears faster, treat it as a hypothesis and isolate the mode from the split, ubatch,
+KV type and memory state before calling it the answer.
 
 ---
 

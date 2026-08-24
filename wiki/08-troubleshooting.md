@@ -113,13 +113,11 @@ Check, in order:
    A `Host` row in the thousands of MiB instead of ~800 is the signature. This is the
    nastiest trap in the wiki (§6.6).
 3. **`-ub` too small?** 128 gives 1368 t/s where 512 gives 2651 (§6.3).
-4. **`-c` much larger than you need?** The window taxes prefill even when empty — 31% at
-   130k (§6.4).
-5. **Pipeline parallelism hurting you?** On mismatched GPUs the pipelined path is often
-   slower than the fallback. Note that `GGML_SCHED_MAX_COPIES` is a **compile-time** define —
-   setting it as an environment variable does nothing. Rebuild with
-   `-DGGML_SCHED_MAX_COPIES=1`, or reach the lean path by raising `-ub` until the pipelined
-   reserve fails (§6.2).
+4. **`-c` much larger than you need?** The window consumes KV memory and may push compute
+   buffers against the VRAM cliff; the old "31% empty-context tax" explanation was withdrawn.
+5. **Bad tensor split or scheduler-copy pressure?** Re-derive `-ts` before blaming pipeline
+   mode. `GGML_SCHED_MAX_COPIES` is compile-time only, and deliberately raising `-ub` until an
+   allocation fails is not a sound speed-tuning method (§6.2 and chapter 18).
 
 ---
 
@@ -158,10 +156,10 @@ Compute buffers didn't fit. Lower `-ub`, reduce `-c`, or rebuild with
 
 ### `sched_reserve: compute buffer allocation failed, retrying without pipeline parallelism`
 
-**A warning, and often good news.** llama.cpp fell back to non-pipelined execution, which on
-mismatched GPUs is *faster* — 2650 vs 1850 t/s here (§6.2). Profiles B in chapter 7 depend on
-this happening. To stop depending on an allocation failure, rebuild with
-`-DGGML_SCHED_MAX_COPIES=1`; setting the environment variable does **not** work.
+**A recoverable warning.** llama.cpp is retrying with a smaller scheduler. If a result row or
+`listening on` follows, record the run as successful fallback; if the retry also fails, it is a
+real OOM. Controlled `ub512` tests put fallback and a one-copy build within 1.6%, so do not call
+the warning a speedup. See chapter 18. The environment variable still does **not** work.
 
 ### `model has unused tensor blk.40.… -- ignoring`
 

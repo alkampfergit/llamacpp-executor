@@ -6,19 +6,18 @@
 #            request -- 15 seconds faster end-to-end than Profile A.
 #            Needle test at 108k tokens: PASS (retrieved CRIMSON-PELICAN-4417).
 #
-#  WHY IT IS FAST -- two effects that compound:
+#  WHY IT FITS AND PERFORMS:
 #    1. q4_0 KV is ~700 MiB smaller than q8_0, which is exactly what makes
 #       -ub 1024 reachable at 130k.
 #    2. -ub 1024's pipelined compute buffers do NOT fit, so llama.cpp retries
-#       without pipeline parallelism -- and on this mismatched 3070/5060 Ti
-#       pair that lean path is substantially faster (2650 vs 1850 t/s).
+#       with one scheduler copy and completes. Controlled tests in wiki/18 show
+#       that the retry is a memory recovery, not the cause of the large speed.
 #
 #  EXPECT AN ALARMING LOG LINE. You will see:
 #      graph_reserve: failed to allocate compute buffers
 #      sched_reserve: compute buffer allocation failed, retrying without
 #                     pipeline parallelism
-#  That is this profile WORKING AS INTENDED. Confirm "model loaded" and
-#  "listening on" follow it.
+#  This is a RECOVERED run. Confirm "model loaded" and "listening on" follow it.
 #
 #  QUALITY CAVEAT: q4_0 KV passed a 108k needle-RETRIEVAL test. That does not
 #  prove it is lossless for multi-step reasoning or code-edit fidelity. If

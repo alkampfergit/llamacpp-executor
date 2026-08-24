@@ -142,8 +142,10 @@ recording anything.
 3. **Every number is labelled with the build that produced it.** Baseline is
    `build 10509, commit fe8156f78, Clang 20.1.8, CUDA 13.3`. Anything else must say so.
 4. **The result row exists.** A run that logged `out of memory` but still produced a row
-   succeeded via llama.cpp's non-pipelined fallback — it is `OK`, not `OOM`. 17 rows were once
-   mislabelled this way and would have been discarded by anyone filtering on status.
+   succeeded via llama.cpp's one-copy fallback — it is `OK`, not `OOM`. New result files record
+   `execution_mode=fallback-single-copy`; a retry with no result is `fallback-failed` and remains
+   `OOM`. Do not infer a speedup from the mode label: chapter 18 isolates the tensor split as the
+   large effect.
 
 ## "What should I run for model X?" — one file answers this
 

@@ -114,12 +114,11 @@ prompts.* Measured with an identical 8192-token prompt, changing only `-c`:
 | 98,304 | 1664 | −22% |
 | 130,048 | 1466 | **−31%** |
 
-The attention mask is sized by the *allocated* context, not the used one, so a bigger window
-means more work per micro-batch regardless of how much you actually put in it.
-
-> **Teaching point.** Context is not free, and it is not free even when empty. Ask for what
-> you need and not more. If you genuinely need 130k, pay the 31% knowingly — that is a fine
-> trade. Asking for 262k "just in case" is not.
+This table was initially misread as an inherent context tax. Later fit-controlled results show
+that the 31% decline was primarily the approach to the VRAM cliff: a 130k configuration that
+fits cleanly prefills as fast as the 8k point. A larger window still consumes KV memory and
+reduces compute-buffer headroom, so ask for what you need, but do not predict a 31% compute tax
+from `-c` alone. See §6.4 and chapter 18.
 
 ### `-np N` / `--parallel N`
 
@@ -252,11 +251,9 @@ With multiple GPUs, llama.cpp enables **pipeline parallelism**: while GPU 1 work
 micro-batch *n*, GPU 0 starts micro-batch *n+1*. To do that it keeps several copies of the
 intermediate activations — by default 4 — which multiplies your compute buffers.
 
-On a **mismatched** pair this is usually a net loss, for two reasons:
-
-1. Those extra activation copies are often exactly what pushes a tight configuration over
-   the VRAM cliff.
-2. A pipeline runs at the speed of its slowest stage, so the fast card waits on the slow one.
+On this pair, the extra copies are often exactly what pushes a tight configuration over the
+VRAM cliff. Whether fewer copies improve throughput is model- and ubatch-dependent; it must be
+measured rather than inferred from the mismatch.
 
 > ### ⚠️ `GGML_SCHED_MAX_COPIES` is **not** an environment variable
 > It is a compile-time `#define` in `ggml/src/ggml-backend.cpp`:
@@ -283,14 +280,14 @@ graph_reserve: failed to allocate compute buffers
 sched_reserve: compute buffer allocation failed, retrying without pipeline parallelism
 ```
 
-When the pipelined buffers don't fit, llama.cpp retries without them — and on this hardware
-the fallback is **substantially faster**: 2650 t/s versus 1850 t/s at 130k context. It is
-reproducible (±3% over three runs) as long as your VRAM conditions are stable.
+When the pipelined buffers do not fit, llama.cpp retries with a smaller scheduler. The retry is
+a valid recovered run, but the old 2650-versus-1850 comparison changed KV type and ubatch too.
+At identical Qwopus `c64000 / ub512 / ts13,28` settings, runtime fallback and a one-copy build
+are only **1.6% apart**. Changing only the split from `12,29` to `13,28` is the repeatable large
+effect: **+12.8% prefill**. See chapter 18.
 
-> **Teaching point.** This is an uncomfortable place to be: your fast path depends on an
-> allocation *failing*. It works, and it is measurable, but it is fragile — free 1.4 GiB and
-> the pipelined path may succeed and run slower. When you find yourself depending on a
-> fallback, the right fix is to make it explicit, which here means rebuilding.
+> **Teaching point.** A warning followed by a result row means recovery succeeded. Record the
+> execution mode, but tune the split and memory headroom instead of deliberately provoking it.
 
 ---
 
