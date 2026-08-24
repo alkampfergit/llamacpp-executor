@@ -86,7 +86,16 @@ try {
   Write-Host ("[$Label] deep#1 : PP={0} t/s over {1} tok | TG={2} t/s over {3} tok" -f `
     [math]::Round($d1.timings.prompt_per_second,1), $d1.timings.prompt_n,
     [math]::Round($d1.timings.predicted_per_second,2), $d1.timings.predicted_n)
-  $needle = if ($d1.choices[0].message.content -match 'CRIMSON[-\s]?PELICAN[-\s]?4417') {'PASS'} else {'FAIL'}
+  # Same null-array hazard as needle-test.ps1, and this one sits INSIDE the probe
+  # loop: a single malformed response would abandon every remaining configuration
+  # with a server still holding the model in VRAM. ERROR is distinct from FAIL on
+  # purpose -- an unreadable payload is not a missed needle.
+  $d1txt = if ($d1.PSObject.Properties['choices'] -and $null -ne $d1.choices -and @($d1.choices).Count -gt 0) {
+             [string]$d1.choices[0].message.content
+           } else { $null }
+  $needle = if ([string]::IsNullOrEmpty($d1txt)) { 'ERROR' }
+            elseif ($d1txt -match 'CRIMSON[-\s]?PELICAN[-\s]?4417') { 'PASS' }
+            else { 'FAIL' }
   Write-Host "[$Label] needle in long answer: $needle"
 
   $d2 = Ask $hay 220

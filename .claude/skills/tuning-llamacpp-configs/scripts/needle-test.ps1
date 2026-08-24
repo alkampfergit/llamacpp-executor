@@ -138,8 +138,28 @@ try {
 }
 $wall = [math]::Round($sw.Elapsed.TotalSeconds,1)
 
-$answer  = (($r.choices[0].message.content) -replace '\s+',' ').Trim()
-$verdict = if ($answer -match 'CRIMSON[-\s]?PELICAN[-\s]?4417') { 'PASS' } else { 'FAIL' }
+# A quality gate must not crash, and must not report FAIL for a response it could
+# not read -- that conflates "the model missed the needle" with "the harness could
+# not parse the payload", which is the same mislabelling trap as calling a
+# fallback-recovered run OOM. `$r.choices[0]` throws "Cannot index into a null
+# array" when `choices` is absent, and @($null).Count is 1, so the null check is
+# load-bearing. Unusable payload -> explicit ERROR, never a silent absence.
+$answer   = ''
+$unusable = $true
+if ($r.PSObject.Properties['choices'] -and $null -ne $r.choices -and @($r.choices).Count -gt 0) {
+  $content = $r.choices[0].message.content
+  if ($null -ne $content) {
+    $answer   = (([string]$content) -replace '\s+',' ').Trim()
+    $unusable = $false
+  }
+}
+$verdict = if ($unusable) { 'ERROR' }
+           elseif ($answer -match 'CRIMSON[-\s]?PELICAN[-\s]?4417') { 'PASS' }
+           else { 'FAIL' }
+if ($unusable) {
+  Write-Host "[$Label] response carried no usable choices[].message.content -- verdict ERROR, not FAIL" `
+    -ForegroundColor Yellow
+}
 $ppN     = if ($r.timings.prompt_n) { $r.timings.prompt_n } else { $r.usage.prompt_tokens }
 
 Write-Host ("[$Label] needle={0}  depth={1}  PP={2} t/s  TG={3} t/s  wall={4}s" -f `

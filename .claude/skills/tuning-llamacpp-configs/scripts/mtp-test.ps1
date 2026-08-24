@@ -128,7 +128,22 @@ function Measure-Spec {
   $tg = [math]::Round($r.timings.predicted_per_second,2)
   $n  = $r.timings.predicted_n
 
-  $txt = [string]$r.choices[0].message.content
+  # Guard the extraction. `$r.choices[0]` on a success payload that carries no
+  # `choices` throws "Cannot index into a null array" -- verified, not assumed --
+  # and it would throw ABOVE the Stop-Process below, leaking a 16-21 GiB model
+  # into VRAM so that every remaining point in the sweep then fails to fit.
+  # Losing one row's hash is the cheap outcome; degrade to '-' and carry on.
+  $txt = ''
+  try {
+    # `$null -ne $r.choices` is load-bearing: @($null).Count is 1, not 0, so a
+    # Count check alone lets a null `choices` through to the indexing.
+    if ($r.PSObject.Properties['choices'] -and $null -ne $r.choices -and @($r.choices).Count -gt 0) {
+      $txt = [string]$r.choices[0].message.content
+    }
+  } catch {
+    Write-Host ("{0,-24} note: no usable choices[] in response; sha unavailable" -f $Label) `
+      -ForegroundColor DarkYellow
+  }
   $sha = if ($txt) {
     $h = [Security.Cryptography.SHA256]::Create()
     try { (([BitConverter]::ToString($h.ComputeHash([Text.Encoding]::UTF8.GetBytes($txt)))) -replace '-','').Substring(0,8) }
