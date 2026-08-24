@@ -84,12 +84,20 @@ S:\HuggingFace\lmstudio\Jackrong\Qwopus3.6-35B-A3B-Coder-MTP-GGUF\Qwopus3.6-35B-
 Shared flags: `-np 1 -ngl 999 -sm layer -ts 12,29 -fa on -b 2048 -fit off`
 (`-ts 12,29` is the only ratio that loads near the ceiling.)
 
-| # | Use it for | `-c` | KV | `-ub` | prefill | generation | peak VRAM | conf |
-| --- | --- | ---: | --- | ---: | ---: | ---: | ---: | :-: |
-| **1** | **max prefill** | 130048 | q4_0/q4_0 | 1024 | **2650** (2757/2599/2594) | 105.7 | 23456 | **A** |
-| **2** | **best all-round** | 126976 | q8_0/q8_0 | 512 | 2323 | **109.1** | 23281 | B |
-| 3 | quality-first, full window | 130048 | q8_0/q8_0 | 512 | 1850 synth, **1414** real | 47.5 @108k | 23371 | B |
-| 4 | max generation, tiny window | 4224 | f16/f16 | 512 | — | **116.7** | — | B |
+| # | Use it for | `-c` | KV | `-ts` | `-ub` | prefill | generation | peak VRAM | conf |
+| --- | --- | ---: | --- | --- | ---: | ---: | ---: | ---: | :-: |
+| **0** | **best evidenced — q8_0 KV at 64k** | 64000 | q8_0/q8_0 | **13,28** | 512 | **2371** (2418/2463/2231) | **98.5** | 23306 | **A** |
+| **1** | **max prefill, full window** | 130048 | q4_0/q4_0 | 12,29 | 1024 | **2650** (2757/2599/2594) | 105.7 | 23456 | **A** |
+| **2** | best all-round | 126976 | q8_0/q8_0 | 12,29 | 512 | 2323 | **109.1** | 23281 | B |
+| 3 | quality-first, full window | 130048 | q8_0/q8_0 | 12,29 | 512 | 1850 synth, **1414** real | 47.5 @108k | 23371 | B |
+| 4 | max generation, tiny window | 4224 | f16/f16 | 10,18 | 512 | — | **116.7** | — | B |
+
+Row 0 is the newest and the most repeated. It also has a real-request corroboration through
+`llama-server`: **2314.79 t/s over 28,107 prompt tokens**, 75.06 t/s generation. Note the
+non-obvious part is **`-ts 13,28`, not the context** — 13:28 puts ~31.7% of the model on the 3070
+against 12:29's 29.3%, which makes the 444 MiB pipelined reservation fail and drops llama.cpp
+onto the fast lean path. Unusually, the trigger is on **device 0**, which no desktop app touches,
+so it reproduces regardless of what is on screen.
 
 Launcher: `serve-qwopus-q4-130k.ps1` is row 1; `serve-qwopus-fast.ps1` row 2;
 `serve-qwopus-130k.ps1` row 3.
@@ -99,6 +107,11 @@ Launcher: `serve-qwopus-q4-130k.ps1` is row 1; `serve-qwopus-fast.ps1` row 2;
 - ⛔ **Never pass `--spec-type` to this model.** MTP is a **net loss** here: −7% at `n-max 1`,
   −29% at `n-max 2`, *despite* 67–72% acceptance. A 3 B-active forward pass has nothing
   expensive to amortise. The `-MTP` in the filename is a trap.
+- ⛔ **Keep `-ngl 999`. Do not "tidy" it to `-ngl 41`.** `n_layer_all` is 41 but there are **42**
+  assignable slots (blocks + output layer), so `-ngl 41` strands one layer on the CPU: measured
+  **−54% prefill** (1085 vs 2371). It does switch pipeline parallelism off and save 451 MiB — and
+  that is not worth having. `-ngl 42` puts pipelining back on, because the gate *is* the
+  full-offload condition. See `wiki/17-pipeline-parallelism-ngl.md`.
 - **Row 1 expects an alarming log line.** `-ub 1024`'s pipelined compute buffers do not fit, so
   llama.cpp retries without pipeline parallelism — and on this mismatched pair that lean path is
   *faster* (2650 vs 1850 t/s). The `out of memory` line followed by a result row is **OK**, not

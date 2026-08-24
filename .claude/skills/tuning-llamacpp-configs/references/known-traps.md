@@ -168,6 +168,41 @@ attributed to it was variance.
 smaller — pursue it, but through the build flag, not an environment variable. On matched
 GPUs, leave the default.
 
+### ⛔ And do NOT try to reach it with `-ngl`. Measured: −54% prefill.
+
+The constant is not the real switch. `sched->n_copies = parallel ? GGML_SCHED_MAX_COPIES : 1`,
+and `parallel` comes from `cparams.pipeline_parallel`, decided at `src/llama-context.cpp:428` by
+five conditions — one of which looks CLI-reachable for free:
+
+```cpp
+model.n_gpu_layers() > model.hparams.n_layer_all
+```
+
+So `-ngl <n_layer_all>` does switch pipelining off, verified by log: no
+`pipeline parallelism enabled`, no fallback warning, and **451 MiB less peak VRAM**. It is still
+wrong, because a model has **`n_layer_all` + 1 assignable slots** — the blocks plus the output
+layer — so `-ngl n_layer_all` strands one layer on the **CPU**:
+
+```
+load_tensors: layer 0 assigned to device CPU     <- -ngl 41  (n_layer_all = 41)
+load_tensors: layer 0 assigned to device CUDA0   <- -ngl 999
+```
+
+Measured on Qwopus3.6-35B-A3B, 3 interleaved reps each, identical config otherwise:
+
+| `-ngl` | prefill | generation | CPU layers |
+| ---: | ---: | ---: | ---: |
+| 999 | **2371** | **98.5** | 0 |
+| 41 | 1085 (**−54%**) | 85.7 | **1** |
+
+One CPU layer costs 54% of prefill — the same family as the `-ncmoe` trap in §3, where two cost
+69%.
+
+**And `-ngl 42` cannot rescue it:** `42 > 41` is precisely the gate condition, so pipelining
+switches back on. **The gate is the "fully offloaded" test**, by design — llama.cpp only
+pipelines when nothing sits on the CPU. Full offload and no-pipelining are the same condition;
+`-ngl` is not a lever here. Use the rebuild. See `wiki/17-pipeline-parallelism-ngl.md`.
+
 ---
 
 ## 5. The `-np` context divisor
