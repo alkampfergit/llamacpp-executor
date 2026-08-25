@@ -27,6 +27,20 @@ inexplicably slow, non-monotonic behaviour, a silent fallback, or any gain near 
 floor. Prefer `Grep` over the submodule to a web search — the checked-out code is the code
 that produced the measurement.
 
+## Prefer a matched local build for causal testing
+
+For investigations into *why* a result occurs, prefer a verified build under `llama.cpp/` over
+the immutable root baseline. A local build is usually newer, its source is available, and narrow
+logging, counters or assertions can be added around the suspected decision. Verify the build's
+commit rather than choosing by timestamp, and run it from its own `bin/`.
+
+Instrumentation is an experiment: build a control and an instrumented variant from the same
+commit, toolchain and CMake options, use identical runtime arguments, and keep them in separate
+build directories. Change only the diagnostic code. A comparison against the root binaries does
+not isolate instrumentation because source, compiler and flags may also differ. Never modify or
+replace the root binaries while doing this, and do not commit diagnostic source edits unless the
+user asks to retain them.
+
 ## Keep the submodule current before reading it
 
 Stale source explains nothing about a binary built from a newer tree. Before investigating,

@@ -1,6 +1,6 @@
 ---
 name: tuning-llamacpp-configs
-description: Find the fastest raw llama.cpp / llama-server configuration for a GGUF model on the GPUs actually present, deciding context size, ubatch, tensor-split, KV cache type and CPU offload from measurement instead of guesswork. Use this whenever the user asks how to run, load, host or speed up a local GGUF model, asks which parameters or flags to use, asks how much context fits in VRAM, wants to benchmark a model, mentions llama-bench / llama-batched-bench / llama-fit-params / llama-server, reports that a local model is slower than expected, or hits CUDA out-of-memory while loading — even if they never say "tune" or "benchmark". Do NOT use for choosing which model to download, for prompt engineering, or for Ollama / LM Studio / vLLM-specific settings.
+description: Find the fastest raw llama.cpp / llama-server configuration for a GGUF model on the GPUs actually present, and explain surprising results from the matching llama.cpp source. Use whenever the user asks how to run, load, host or speed up a local GGUF model, asks why a benchmark or fallback behaves strangely, asks which flags to use or how much context fits in VRAM, wants to benchmark a model, mentions llama-bench / llama-batched-bench / llama-fit-params / llama-server, reports slower-than-expected behavior, or hits CUDA out-of-memory — even if they never say "tune" or "benchmark". Do NOT use for choosing which model to download, prompt engineering, or Ollama / LM Studio / vLLM-specific settings.
 argument-hint: "[path to .gguf]"
 shell: powershell
 allowed-tools: PowerShell Bash Read Write Edit Glob Grep
@@ -166,7 +166,7 @@ Non-negotiable rules, each of which was learned by being burned:
 
 The bundled harness enforces all five. Prefer running it over hand-rolling a loop.
 
-### 6. Interpret honestly
+### 6. Explain anomalies from source, then interpret honestly
 
 - **Differences under ~8% are noise** when a GPU also drives a display. Do not conclude
   from a 3% gain without repeating.
@@ -177,6 +177,31 @@ The bundled harness enforces all five. Prefer running it over hand-rolling a loo
 - If a fallback path appears to outperform the intended path, record the mode and run an
   identical-arguments A/B before assigning causality. A successful retry is valid data, not
   automatically a tuning recommendation.
+
+Before explaining *why*, identify the exact build that produced the result. Record the commit
+from `llama-server --version`, `llama-cli --version`, or the final `build:` row from a bench
+run. Only reason from the checked-out `llama.cpp/` source when that commit matches. On a
+mismatch, inspect the recorded revision with `git show` or a separate worktree, or rebuild from
+the current source; do not silently move the parent repository's submodule checkout.
+
+For a strange warning, fallback, non-monotonic curve, or flag effect, search the matching source
+for the emitted log text, option definition, allocation, and branch that selects the observed
+path. Follow callers far enough to state the mechanism. Treat the source as evidence of what the
+program can do and the controlled measurement as evidence of what happened here; require both
+before making a causal claim.
+
+**Prefer a verified local build for causal investigation.** It is usually newer than the root
+baseline and can be instrumented. Run it from its own `bin/`, label its commit and flags, and do
+not choose it merely by file timestamp. If source reading leaves doubt, add narrowly scoped
+logging, counters, or assertions around the suspected decision, then compare an instrumented
+build with a control built from the same commit, toolchain, CMake options, and runtime arguments.
+Use separate build directories and change only the diagnostic instrumentation. Keep diagnostic
+source edits reviewable and uncommitted unless the user asks to retain them.
+
+The root binaries remain an immutable historical baseline. They are useful for continuity, but
+a root-versus-local comparison cannot isolate a mechanism when source, compiler, or build flags
+differ. If no suitable local control exists, use the `building-llamacpp-cuda` skill to create
+matched control and instrumented builds; never overwrite the root binaries.
 
 ### 7. Validate over HTTP
 
@@ -372,6 +397,4 @@ binaries by default, overridable with `-OutDir`.
 
 Requires: llama.cpp CUDA build with `llama-fit-params.exe`, `llama-batched-bench.exe` and
 `llama-server.exe`; `nvidia-smi` on PATH; PowerShell 7+.
-
-
 
