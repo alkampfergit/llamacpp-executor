@@ -1,0 +1,71 @@
+{
+  "label": "verify-c130000-q8_0",
+  "ctx": 130000,
+  "ts": "12,29",
+  "ub": 512,
+  "ctk": "q8_0",
+  "ctv": "q8_0",
+  "non_local_max_mib": 556.0,
+  "host_predicted_mib": 789.0,
+  "non_local_excess_mib": -233.0,
+  "headroom_min_mib": 498,
+  "verdict": "RESIDENT-FALLBACK",
+  "adapters": [
+    {
+      "adapter": "GPU1",
+      "dedicated_mib": 15092.6,
+      "non_local_mib": 556.0,
+      "shared_mib": 556.0
+    },
+    {
+      "adapter": "GPU0",
+      "dedicated_mib": 7422.1,
+      "non_local_mib": 492.0,
+      "shared_mib": 492.0
+    }
+  ],
+  "smi_peak": [
+    {
+      "gpu": 0,
+      "used_mib": 7421,
+      "total_mib": 8192,
+      "headroom_mib": 771
+    },
+    {
+      "gpu": 1,
+      "used_mib": 15813,
+      "total_mib": 16311,
+      "headroom_mib": 498
+    }
+  ],
+  "reps": [
+    {
+      "rep": 1,
+      "prompt_n": 4922,
+      "prompt_ms": 2752.6,
+      "prefill_tps": 1788.1,
+      "gen_tps": 79.35
+    },
+    {
+      "rep": 2,
+      "prompt_n": 4919,
+      "prompt_ms": 2503.5,
+      "prefill_tps": 1964.8,
+      "gen_tps": 89.58
+    },
+    {
+      "rep": 3,
+      "prompt_n": 4922,
+      "prompt_ms": 2454.1,
+      "prefill_tps": 2005.6,
+      "gen_tps": 89.51
+    }
+  ],
+  "alloc_warnings": [
+    "0.04.818.485 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 831.13 MiB on device 0: cudaMalloc failed: out of memory",
+    "0.04.818.495 E ggml_gallocr_reserve_n_impl: failed to allocate CUDA0 buffer of size 871498240",
+    "0.04.818.498 E graph_reserve: failed to allocate compute buffers",
+    "0.04.818.528 W sched_reserve: compute buffer allocation failed, retrying without pipeline parallelism"
+  ],
+  "log": "S:\\OsDevelop\\llamacpp\\wiki\\benchmarks\\vram-residency\\residency-verify-c130000-q8_0.log"
+}

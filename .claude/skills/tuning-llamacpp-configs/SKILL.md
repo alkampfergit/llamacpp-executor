@@ -71,6 +71,13 @@ indistinguishable from an overflowing one. Say so plainly rather than tuning aro
 > a clean `cudaMalloc failed: out of memory` means covered; ~800–950 t/s with no error in the
 > log means still spilling. Global Settings covers everything, including future build paths.
 >
+> To measure residency directly rather than infer it from throughput, run
+> `scripts/check-vram-residency.ps1` — it samples the per-process WDDM `Non Local Usage`
+> counter, which `nvidia-smi` cannot see. **But read `wiki/19-vram-residency.md` first: a
+> healthy llama.cpp run legitimately holds 480–940 MiB of host buffers, so non-zero non-local
+> memory is not a spill.** A spill needs that figure *above* `llama-fit-params`' `Host` budget
+> **and** zero dedicated headroom.
+>
 > A freshly compiled binary is a **new path** and starts uncovered.
 
 **If you are measuring a self-compiled build**, two more preconditions:
@@ -386,6 +393,11 @@ Load only what the current question needs.
   with an optional expected-runtime-fallback control.
 - `scripts/tensor-split-ab.ps1` — interleaved tensor-split A/B with build and all other runtime
   arguments held fixed.
+- `scripts/check-vram-residency.ps1` — proves whether a config is entirely in VRAM or spilling
+  to system RAM, using the per-process WDDM `Non Local Usage` counter that `nvidia-smi` cannot
+  see. Also reports real HTTP prefill/generation per repetition with the cold rep separated.
+  **Read `wiki/19-vram-residency.md` before interpreting it: non-zero non-local memory is
+  normal, not a spill.** Quote the split (`-Ts '12,29'`) or PowerShell parses it as an array.
 - `scripts/needle-test.ps1` — long-context quality gate over HTTP. Run it before adopting
   any lossy KV setting, and to get real deep-context throughput.
 - `scripts/mtp-test.ps1` — speculative-decoding measurement over HTTP: baseline vs

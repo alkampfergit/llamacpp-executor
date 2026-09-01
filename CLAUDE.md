@@ -95,8 +95,9 @@ baseline.
 ## Scripts live in ONE place — `.claude/skills/tuning-llamacpp-configs/scripts/`
 
 There is no `wiki/scripts/` directory. Every operative PowerShell script — the benchmark
-harness, the MTP and needle quality gates, the `serve-*` launchers, and the deep-probe /
-resume-benchmarks helpers — lives under `.claude/skills/tuning-llamacpp-configs/scripts/`.
+harness, the MTP and needle quality gates, the VRAM-residency checker, the `serve-*` launchers,
+and the deep-probe / resume-benchmarks helpers — lives under
+`.claude/skills/tuning-llamacpp-configs/scripts/`.
 The wiki's chapters only *reference* these scripts by path; they do not carry their own copy.
 
 This used to not be true. Three scripts (`bench-harness.ps1`, `mtp-test.ps1`,

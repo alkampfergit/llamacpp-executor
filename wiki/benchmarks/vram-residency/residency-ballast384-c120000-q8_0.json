@@ -1,0 +1,92 @@
+{
+  "label": "ballast384-c120000-q8_0",
+  "ctx": 120000,
+  "ts": "12,29",
+  "ub": 512,
+  "ctk": "q8_0",
+  "ctv": "q8_0",
+  "non_local_max_mib": 482.0,
+  "host_predicted_mib": 750.0,
+  "non_local_excess_mib": -268.0,
+  "headroom_min_mib": 374,
+  "verdict": "RESIDENT-FALLBACK",
+  "adapters": [
+    {
+      "adapter": "GPU1",
+      "dedicated_mib": 15056.4,
+      "non_local_mib": 482.0,
+      "shared_mib": 482.0
+    },
+    {
+      "adapter": "GPU0",
+      "dedicated_mib": 7362.0,
+      "non_local_mib": 482.0,
+      "shared_mib": 482.0
+    }
+  ],
+  "smi_peak": [
+    {
+      "gpu": 0,
+      "used_mib": 7818,
+      "total_mib": 8192,
+      "headroom_mib": 374
+    },
+    {
+      "gpu": 1,
+      "used_mib": 15783,
+      "total_mib": 16311,
+      "headroom_mib": 528
+    }
+  ],
+  "reps": [
+    {
+      "rep": 1,
+      "prompt_n": 4921,
+      "prompt_ms": 2209.0,
+      "prefill_tps": 2227.8,
+      "gen_tps": 80.91
+    },
+    {
+      "rep": 2,
+      "prompt_n": 4918,
+      "prompt_ms": 1945.6,
+      "prefill_tps": 2527.7,
+      "gen_tps": 88.68
+    },
+    {
+      "rep": 3,
+      "prompt_n": 4921,
+      "prompt_ms": 1856.5,
+      "prefill_tps": 2650.7,
+      "gen_tps": 89.93
+    },
+    {
+      "rep": 4,
+      "prompt_n": 4919,
+      "prompt_ms": 1872.3,
+      "prefill_tps": 2627.3,
+      "gen_tps": 90.22
+    },
+    {
+      "rep": 5,
+      "prompt_n": 4917,
+      "prompt_ms": 1916.5,
+      "prefill_tps": 2565.6,
+      "gen_tps": 90.66
+    },
+    {
+      "rep": 6,
+      "prompt_n": 4920,
+      "prompt_ms": 1963.7,
+      "prefill_tps": 2505.5,
+      "gen_tps": 90.14
+    }
+  ],
+  "alloc_warnings": [
+    "0.04.799.084 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 772.63 MiB on device 0: cudaMalloc failed: out of memory",
+    "0.04.799.096 E ggml_gallocr_reserve_n_impl: failed to allocate CUDA0 buffer of size 810156544",
+    "0.04.799.098 E graph_reserve: failed to allocate compute buffers",
+    "0.04.799.129 W sched_reserve: compute buffer allocation failed, retrying without pipeline parallelism"
+  ],
+  "log": "S:\\OsDevelop\\llamacpp\\wiki\\benchmarks\\vram-residency\\residency-ballast384-c120000-q8_0.log"
+}

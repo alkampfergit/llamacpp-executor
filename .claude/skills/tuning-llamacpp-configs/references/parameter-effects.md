@@ -109,6 +109,25 @@ Near the memory ceiling, context and prefill trade against each other steeply.
 > comfortably, 130k prefills at essentially the same speed as 8k (2650 vs 2651 t/s). Do not
 > tell users that large contexts are inherently slow — tell them large contexts are hard to
 > *fit*, and that fitting is what costs speed.
+>
+> **Confirmed at the mechanism level, and re-measured over HTTP (2026-09-01).**
+> `llama_kv_cache::get_n_kv()` pads `cells.used_max_p1()` — the *used* cells, capped at cache
+> size — so for a fixed prompt the attention graph is identical at any `-c`. Context length
+> costs nothing computationally. But `sched_reserve()` reserves the worst-case graph with
+> `n_tokens = min(n_ctx, n_ubatch)` against `memory->init_full()`, so the **reserved compute
+> buffer grows linearly with `-c`: 6.0 KiB of CUDA0 buffer per 1024 context tokens** (444 MiB
+> at 64000 → 831 MiB at 130048, linear to the megabyte). That is the second, easily forgotten
+> way `-c` spends VRAM.
+>
+> Six-repetition HTTP measurements at `q8_0 / ub512 / ts12,29`: **`-c 120000` → 2550 t/s,
+> `-c 130000` → 1969 t/s (−26%), `-c 64000` → 2521 t/s.**
+>
+> **And `-c` is not the cause even here.** Ballast experiments at a *fixed* `-c 120000` show the
+> controlling variable is **free VRAM on the display GPU, threshold ~500 MiB**: 128 MiB pinned on
+> GPU1 reproduces the entire −26%, while 384 MiB pinned on GPU0 costs 1.4%. Below the threshold
+> WDDM demotes ~133 MiB off that adapter. So right-sizing `-c` works — but it works by *freeing
+> the display GPU*, and closing desktop apps does the same thing for free. `120000` is the
+> better-evidenced target than the `126976` in the table above. See `wiki/19-vram-residency.md`.
 
 ---
 

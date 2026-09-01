@@ -1,0 +1,92 @@
+{
+  "label": "evict-gpu1-128-c120000",
+  "ctx": 120000,
+  "ts": "12,29",
+  "ub": 512,
+  "ctk": "q8_0",
+  "ctv": "q8_0",
+  "non_local_max_mib": 546.0,
+  "host_predicted_mib": 750.0,
+  "non_local_excess_mib": -204.0,
+  "headroom_min_mib": 434,
+  "verdict": "RESIDENT-FALLBACK",
+  "adapters": [
+    {
+      "adapter": "GPU1",
+      "dedicated_mib": 14992.6,
+      "non_local_mib": 546.0,
+      "shared_mib": 546.0
+    },
+    {
+      "adapter": "GPU0",
+      "dedicated_mib": 7362.0,
+      "non_local_mib": 482.0,
+      "shared_mib": 482.0
+    }
+  ],
+  "smi_peak": [
+    {
+      "gpu": 0,
+      "used_mib": 7361,
+      "total_mib": 8192,
+      "headroom_mib": 831
+    },
+    {
+      "gpu": 1,
+      "used_mib": 15877,
+      "total_mib": 16311,
+      "headroom_mib": 434
+    }
+  ],
+  "adapter_shared_mib": [
+    {
+      "adapter": "luid_0x00000000_0x00016248_phys_0",
+      "shared_mib": 621.7
+    },
+    {
+      "adapter": "luid_0x00000000_0x00014b05_phys_0",
+      "shared_mib": 482.2
+    },
+    {
+      "adapter": "luid_0x00000000_0x000177f7_phys_0",
+      "shared_mib": 0.0
+    }
+  ],
+  "reps": [
+    {
+      "rep": 1,
+      "prompt_n": 4922,
+      "prompt_ms": 2590.8,
+      "prefill_tps": 1899.8,
+      "gen_tps": 79.35
+    },
+    {
+      "rep": 2,
+      "prompt_n": 4922,
+      "prompt_ms": 2472.3,
+      "prefill_tps": 1990.9,
+      "gen_tps": 90.34
+    },
+    {
+      "rep": 3,
+      "prompt_n": 4918,
+      "prompt_ms": 2605.4,
+      "prefill_tps": 1887.6,
+      "gen_tps": 90.33
+    },
+    {
+      "rep": 4,
+      "prompt_n": 4921,
+      "prompt_ms": 2628.1,
+      "prefill_tps": 1872.5,
+      "gen_tps": 89.76
+    }
+  ],
+  "alloc_warnings": [
+    "0.04.747.519 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 772.63 MiB on device 0: cudaMalloc failed: out of memory",
+    "0.04.747.528 E ggml_gallocr_reserve_n_impl: failed to allocate CUDA0 buffer of size 810156544",
+    "0.04.747.530 E graph_reserve: failed to allocate compute buffers",
+    "0.04.747.550 W sched_reserve: compute buffer allocation failed, retrying without pipeline parallelism"
+  ],
+  "log": "S:\\OsDevelop\\llamacpp\\wiki\\benchmarks\\vram-residency\\residency-evict-gpu1-128-c120000.log"
+}

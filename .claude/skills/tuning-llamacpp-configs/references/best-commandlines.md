@@ -88,6 +88,7 @@ Shared flags: `-np 1 -ngl 999 -sm layer -ts 12,29 -fa on -b 2048 -fit off`
 | --- | --- | ---: | --- | --- | ---: | ---: | ---: | ---: | :-: |
 | **0a** | **best custom-build, q8_0 KV at 64k** (`build-fa`) | 64000 | q8_0/q8_0 | **13,28** | 512 | **2696** (5 reps) | **104.5** | 23101 | **A** |
 | **0b** | **best stock-binary, q8_0 KV at 64k** | 64000 | q8_0/q8_0 | **13,28** | 512 | **2371** (2418/2463/2231) | **98.5** | 23306 | **A** |
+| **0c** | **best q8_0 window/speed trade — HTTP-measured** | **120000** | q8_0/q8_0 | 12,29 | 512 | **2550** (6 reps, HTTP) | 90.6 | 23226 | **A** |
 | **1** | **max prefill, full window** | 130048 | q4_0/q4_0 | 12,29 | 1024 | **2650** (2757/2599/2594) | 105.7 | 23456 | **A** |
 | **2** | best all-round | 126976 | q8_0/q8_0 | 12,29 | 512 | 2323 | **109.1** | 23281 | B |
 | 3 | quality-first, full window | 130048 | q8_0/q8_0 | 12,29 | 512 | 1850 synth, **1414** real | 47.5 @108k | 23371 | B |
@@ -129,9 +130,28 @@ Launcher: `serve-qwopus-q4-130k.ps1` is row 1; `serve-qwopus-fast.ps1` row 2;
   re-verified with `bench-harness.ps1` repetitions** — rows 0a/0b's logged numbers may already
   reflect fallback-mode performance, which would make `13,29` a real (if small) gain rather than
   a wash. Worth a proper re-measurement before promoting it into the table.
-- **The `-c 126976` in row 2 is not a typo.** Giving up 2.4% of the window buys 26% more
-  prefill, because the curve is steep at the ceiling: 130048 → 1850, 129024 → 2101,
-  **126976 → 2323**, 122880 → 2225.
+- **Row 0c is measured differently from every other row here.** `llama-server` over HTTP with
+  a ~4,920-token prompt, 6 repetitions, cold rep excluded — not `llama-batched-bench` with an
+  8192-token synthetic prompt. Compare it to rows 1–4 only with that in mind. Its point is the
+  *ranking*: at identical flags, `-c 120000` beat `-c 130000` by **+30%** (2550 vs 1969) and
+  beat `-c 64000` too, with generation flat. See `wiki/19-vram-residency.md`.
+- **Right-sizing `-c` is real, but the exact sweet spot has moved and row 2 needs
+  re-measurement.** Row 2's `126976 → 2323` came from `llama-batched-bench`. Re-measured over
+  HTTP on 2026-09-01, `-c 126976` triggered the compute-buffer fallback and returned ~2112 t/s
+  on its one warm repetition — in the slow band, not the fast one. The ceiling curve
+  (130048 → 1850, 129024 → 2101, 126976 → 2323, 122880 → 2225) was always noisy near the top,
+  and the cliff sits close enough to `126976` that desktop VRAM drift can move a run across it.
+  **`-c 120000` (row 0c) is the better-evidenced choice** and is far enough below the boundary
+  to be stable.
+- **The KV cache never spills — but leave the DISPLAY GPU ≥ 500 MiB free.** That threshold,
+  not the context number, is what actually governs prefill here: below it WDDM quietly demotes
+  ~133 MiB off that adapter and prefill drops ~26%. Proved by pinning ballast VRAM at a fixed
+  `-c 120000` — 128 MiB on GPU1 reproduces the whole loss, 384 MiB on GPU0 costs nothing. So
+  **closing GPU-using desktop apps is worth up to 26% of prefill**, and `-ts 13,28` cannot
+  rescue `-c 130000` (it hard-OOMs GPU0). Verify with `scripts/check-vram-residency.ps1`, and
+  read `wiki/19` first: a healthy run legitimately reports 480–940 MiB of non-local memory, and
+  the spill that matters here is *below* that budget — detect it as a **delta against a matched
+  control**, never as an absolute number.
 - Needle test at 108k: **PASS** on rows 1 and 3.
 
 ### `--no-mmap` — cuts idle system RAM ~94%, no measured speed cost

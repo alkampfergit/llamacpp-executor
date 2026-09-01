@@ -91,6 +91,11 @@ On Windows, since NVIDIA driver 536.40, **a CUDA program that exceeds VRAM does 
 out-of-memory error.** The driver moves the overflow into system RAM and lets it run — at a
 fraction of the speed. Windows calls this "Shared GPU Memory".
 
+> But do not read the converse: a non-zero Shared GPU Memory figure is **not** evidence of
+> overflow — llama.cpp legitimately keeps several hundred MiB of host buffers there.
+> [Chapter 19](19-vram-residency.md) has the per-process counter and the calibration that
+> tells the two apart.
+
 This is the answer to the question that started the whole investigation:
 
 ```

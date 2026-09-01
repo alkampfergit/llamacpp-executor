@@ -35,6 +35,59 @@ context creation, so restart any running server.
 
 Not an issue on Linux — CUDA has always OOM'd properly there.
 
+### How to actually verify residency — and the calibration that stops a false positive
+
+`nvidia-smi` reports **dedicated** VRAM only and cannot see a spill. The WDDM counters can,
+per process and per adapter:
+
+```powershell
+(Get-Counter '\GPU Process Memory(*)\Non Local Usage').CounterSamples |
+  Where-Object { $_.InstanceName -like "pid_${serverPid}_*" }
+```
+
+`scripts/check-vram-residency.ps1` automates the whole procedure (launch, sample at peak
+during a real HTTP prefill, grep the log, verdict).
+
+> ### ⚠️ Non-zero non-local memory is NOT a spill
+> llama.cpp always keeps several hundred MiB of host-visible buffers — CPU-side weights and
+> pinned staging — and WDDM correctly counts those as non-local. Measured on this box, healthy
+> runs read **480–940 MiB**, and the **fastest configuration had the highest figure (938 MiB)**
+> while the slowest had 556 MiB. A detector that flags "non-local > 0" calls every run a spill.
+>
+> Compare against llama.cpp's own intent instead: `llama-fit-params ... -fitp on` prints a
+> `Host` row (`Host 272 0 517` → 789 MiB). A **gross** overflow shows as non-local far above
+> that budget with dedicated usage pinned at the adapter maximum.
+>
+> **But no absolute threshold is sufficient, however well calibrated.** The spill that actually
+> cost 26% of prefill on this box was **+64 MiB on a 482 MiB baseline — still 200 MiB *below*
+> the predicted budget.** Detect a spill as a **delta between two runs differing in one
+> variable**, and watch the **adapter-wide** counter
+> (`\GPU Adapter Memory(*)\Shared Usage`, all processes) as well as the per-process one: most
+> of that demotion was other processes' surfaces, invisible in llama-server's own numbers.
+> See `wiki/19-vram-residency.md`.
+
+### The real trap on a multi-GPU box: it is the DISPLAY GPU's headroom
+
+On Qwopus, `-c 130000` costs 26% of prefill against `-c 120000`. The cause is **not** the KV
+cache, the pipeline fallback, or context length — all three were measured and refuted. It is
+**free VRAM on the GPU that drives the display**, with a threshold near **500 MiB**. Below it,
+WDDM demotes ~133 MiB off that adapter (64 MiB of llama-server's own, the rest other processes')
+and prefill drops a quarter, silently.
+
+Proved by intervention, not correlation: at a *fixed* `-c 120000`, pinning **128 MiB** of ballast
+on the display GPU reproduces the whole effect, while **384 MiB** on the other GPU costs nothing
+(`scripts/ballast.cu`). So:
+
+- **Closing GPU-using desktop apps is worth up to 26% of prefill here** — a measured tuning
+  action, not housekeeping.
+- Budget `-c` to leave the display GPU ≥ 500 MiB free, and re-check when the desktop changes:
+  idle usage on the display card drifted 646 → 1065 MiB in one session, enough on its own to
+  flip a borderline config between the fast and slow bands.
+- A `-ts` change that relieves the display GPU may simply move the failure: `-ts 13,28` at
+  `-c 130000` hard-OOMs the other card.
+
+See `wiki/19-vram-residency.md`.
+
 ---
 
 ## 2. KV cache type pairs

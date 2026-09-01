@@ -18,9 +18,18 @@ nvidia-smi --query-gpu=index,memory.used,memory.total,utilization.gpu --format=c
 
 Open Task Manager → Performance → your GPU, and look at **Shared GPU Memory**.
 
+> ⚠️ **`Shared GPU Memory > 0` on its own is NOT overflow.** llama.cpp always keeps several
+> hundred MiB of host-visible buffers, and Windows counts those here: healthy runs on this box
+> read **480–940 MiB**, and the *fastest* configuration measured had the *highest* figure.
+> Overflow needs the **card also being full** — see the signature table below, and
+> [chapter 19](19-vram-residency.md) for the per-process counter and the calibration against
+> `llama-fit-params`' `Host` budget. `scripts/check-vram-residency.ps1` applies the rule for you.
+
 | Signature | Cause |
 | --- | --- |
-| `memory.used` pinned at the card's maximum, **Shared GPU Memory > 0**, low GPU utilisation | **VRAM overflow into system RAM** → §8.2 |
+| `memory.used` pinned at the card's maximum (**no headroom left**) **and** Shared GPU Memory far above llama.cpp's predicted `Host` budget, low GPU utilisation | **VRAM overflow into system RAM** → §8.2 |
+| Shared GPU Memory non-zero but the card still has headroom | **Normal.** llama.cpp's own host buffers → not a fault |
+| Prefill down ~25%, no error, everything "fits", and the **display GPU** has < ~500 MiB free | **WDDM demoting ~130 MiB off the display adapter** → close GPU-using desktop apps, or reduce `-c`. See [chapter 19](19-vram-residency.md) |
 | Both GPUs at ~0–6% utilisation, CPU at ~50% | **Layers running on the CPU** → §8.3 |
 | GPUs busy, but throughput still low | Wrong `-ub`, or a slow KV type → §8.4 |
 
