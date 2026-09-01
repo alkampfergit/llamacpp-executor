@@ -121,10 +121,51 @@ Launcher: `serve-qwopus-q4-130k.ps1` is row 1; `serve-qwopus-fast.ps1` row 2;
 - **Row 1 expects an alarming log line.** `-ub 1024`'s larger reservation does not fit, so
   llama.cpp retries with one scheduler copy. An `out of memory` line followed by a result row is
   **OK recovered fallback**, not a failed run and not evidence that the retry caused the speed.
+- **`-ts 13,28` (rows 0a/0b) also hits this same fallback at `-c 64000`.** A fresh check
+  reproduced `cudaMalloc failed: out of memory` on CUDA0 during `graph_reserve`, silently
+  recovered as "retrying without pipeline parallelism" — same pattern as row 1's `-ub 1024`
+  above, just a different trigger. `-ts 13,29` (one layer moved off the 3070 onto the 5060 Ti)
+  cleared it entirely, with no measured speed cost across a quick 3-run check. **Not yet
+  re-verified with `bench-harness.ps1` repetitions** — rows 0a/0b's logged numbers may already
+  reflect fallback-mode performance, which would make `13,29` a real (if small) gain rather than
+  a wash. Worth a proper re-measurement before promoting it into the table.
 - **The `-c 126976` in row 2 is not a typo.** Giving up 2.4% of the window buys 26% more
   prefill, because the curve is steep at the ceiling: 130048 → 1850, 129024 → 2101,
   **126976 → 2323**, 122880 → 2225.
 - Needle test at 108k: **PASS** on rows 1 and 3.
+
+### `--no-mmap` — cuts idle system RAM ~94%, no measured speed cost
+
+Quick single-session check (curl-driven completions, 3×200 tokens each — **not** a full
+`bench-harness.ps1` campaign, so treat as informal, re-measure with repetitions before fully
+trusting the digits) at `-c 64000 -ctk q8_0 -ctv q8_0 -ts 13,29 -fa on -b 2048 -ub 512 -fit off
+-ngl 999 -sm layer -np 1`:
+
+| | load time | generation (avg of 3×200 tok) | system RAM (Working Set) after load |
+| --- | ---: | ---: | ---: |
+| with mmap (default) | 11.2 s | 84.8 t/s | **~20.8 GiB** |
+| `--no-mmap` | **6.1 s** | 87.7 t/s | **~1.3 GiB** |
+
+The generation difference (84.8 vs 87.7) is inside this repo's 8% noise floor — **not a
+performance trade, a strict win** for a fully-offloaded model, and load was faster too, not
+slower as expected.
+
+Root cause: `llama_mmap::impl::unmap_fragment()` on Windows (`llama-mmap.cpp:580-583`) is a
+**no-op** — `GGML_UNUSED(first); GGML_UNUSED(last);`, nothing else. The POSIX build really does
+call `munmap()` on the unused range once weights are uploaded to GPU (`llama-mmap.cpp:490-507`),
+but on Windows that release never happens, because `MapViewOfFile`/`UnmapViewOfFile` can only
+(un)map a *whole* view — there is no Windows equivalent of unmapping a sub-range. So the entire
+mmap'd GGUF file stays part of the process's resident working set for the life of the server,
+not just during load, on this platform specifically. `--no-mmap` avoids the problem instead of
+working around it: weight upload routes through 4×64 MiB pinned staging buffers instead
+(`llama-model-loader.cpp:1443-1454`), which *are* freed correctly after load (ordinary
+`ggml_backend_buffer_free`, no platform gap).
+
+Applies whenever `-ngl 999` reaches full offload — mmap's own benefit (zero-copy CPU-resident
+tensors) no longer applies at that point, so only the Windows-only cost remains.
+**Recommend `--no-mmap` by default on this machine for any config that fully offloads.**
+
+---
 
 ### Asymmetric KV (`q8_0`/`q4_0`) — measured, and deliberately not recommended
 
