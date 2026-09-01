@@ -86,18 +86,25 @@ Shared flags: `-np 1 -ngl 999 -sm layer -ts 12,29 -fa on -b 2048 -fit off`
 
 | # | Use it for | `-c` | KV | `-ts` | `-ub` | prefill | generation | peak VRAM | conf |
 | --- | --- | ---: | --- | --- | ---: | ---: | ---: | ---: | :-: |
-| **0** | **best evidenced — q8_0 KV at 64k** | 64000 | q8_0/q8_0 | **13,28** | 512 | **2371** (2418/2463/2231) | **98.5** | 23306 | **A** |
+| **0a** | **best custom-build, q8_0 KV at 64k** (`build-fa`) | 64000 | q8_0/q8_0 | **13,28** | 512 | **2696** (5 reps) | **104.5** | 23101 | **A** |
+| **0b** | **best stock-binary, q8_0 KV at 64k** | 64000 | q8_0/q8_0 | **13,28** | 512 | **2371** (2418/2463/2231) | **98.5** | 23306 | **A** |
+| **0c** | **best q8_0 window/speed trade — HTTP-measured** | **120000** | q8_0/q8_0 | 12,29 | 512 | **2550** (6 reps, HTTP) | 90.6 | 23226 | **A** |
 | **1** | **max prefill, full window** | 130048 | q4_0/q4_0 | 12,29 | 1024 | **2650** (2757/2599/2594) | 105.7 | 23456 | **A** |
 | **2** | best all-round | 126976 | q8_0/q8_0 | 12,29 | 512 | 2323 | **109.1** | 23281 | B |
 | 3 | quality-first, full window | 130048 | q8_0/q8_0 | 12,29 | 512 | 1850 synth, **1414** real | 47.5 @108k | 23371 | B |
 | 4 | max generation, tiny window | 4224 | f16/f16 | 10,18 | 512 | — | **116.7** | — | B |
 
-Row 0 is the newest and the most repeated. It also has a real-request corroboration through
+Row 0b has a real-request corroboration through
 `llama-server`: **2314.79 t/s over 28,107 prompt tokens**, 75.06 t/s generation. Note the
 non-obvious part is **`-ts 13,28`, not the context** — 13:28 puts ~31.7% of the model on the 3070
-against 12:29's 29.3%, which makes the 444 MiB pipelined reservation fail and drops llama.cpp
-onto the fast lean path. Unusually, the trigger is on **device 0**, which no desktop app touches,
-so it reproduces regardless of what is on screen.
+against 12:29's 29.3%. A controlled five-repetition A/B with scheduler mode fixed measures that
+split itself at **+12.8% prefill**. On the stock binary it also makes the 444 MiB reservation
+fail; chapter 18 shows the successful retry is recovery, not the cause of the large gain.
+
+Row 0a uses `llama.cpp\build-fa\bin`, not the stock root binaries. Five interleaved same-source
+repetitions at the row's exact arguments averaged 2696 / 104.5. The matched control recovered
+through runtime fallback at 2653 / 104.6, so the deterministic one-copy build removes the
+warning and memory fragility without claiming a material speed advantage of its own.
 
 Launcher: `serve-qwopus-q4-130k.ps1` is row 1; `serve-qwopus-fast.ps1` row 2;
 `serve-qwopus-130k.ps1` row 3.
@@ -112,14 +119,73 @@ Launcher: `serve-qwopus-q4-130k.ps1` is row 1; `serve-qwopus-fast.ps1` row 2;
   **−54% prefill** (1085 vs 2371). It does switch pipeline parallelism off and save 451 MiB — and
   that is not worth having. `-ngl 42` puts pipelining back on, because the gate *is* the
   full-offload condition. See `wiki/17-pipeline-parallelism-ngl.md`.
-- **Row 1 expects an alarming log line.** `-ub 1024`'s pipelined compute buffers do not fit, so
-  llama.cpp retries without pipeline parallelism — and on this mismatched pair that lean path is
-  *faster* (2650 vs 1850 t/s). The `out of memory` line followed by a result row is **OK**, not
-  a failure.
-- **The `-c 126976` in row 2 is not a typo.** Giving up 2.4% of the window buys 26% more
-  prefill, because the curve is steep at the ceiling: 130048 → 1850, 129024 → 2101,
-  **126976 → 2323**, 122880 → 2225.
+- **Row 1 expects an alarming log line.** `-ub 1024`'s larger reservation does not fit, so
+  llama.cpp retries with one scheduler copy. An `out of memory` line followed by a result row is
+  **OK recovered fallback**, not a failed run and not evidence that the retry caused the speed.
+- **`-ts 13,28` (rows 0a/0b) also hits this same fallback at `-c 64000`.** A fresh check
+  reproduced `cudaMalloc failed: out of memory` on CUDA0 during `graph_reserve`, silently
+  recovered as "retrying without pipeline parallelism" — same pattern as row 1's `-ub 1024`
+  above, just a different trigger. `-ts 13,29` (one layer moved off the 3070 onto the 5060 Ti)
+  cleared it entirely, with no measured speed cost across a quick 3-run check. **Not yet
+  re-verified with `bench-harness.ps1` repetitions** — rows 0a/0b's logged numbers may already
+  reflect fallback-mode performance, which would make `13,29` a real (if small) gain rather than
+  a wash. Worth a proper re-measurement before promoting it into the table.
+- **Row 0c is measured differently from every other row here.** `llama-server` over HTTP with
+  a ~4,920-token prompt, 6 repetitions, cold rep excluded — not `llama-batched-bench` with an
+  8192-token synthetic prompt. Compare it to rows 1–4 only with that in mind. Its point is the
+  *ranking*: at identical flags, `-c 120000` beat `-c 130000` by **+30%** (2550 vs 1969) and
+  beat `-c 64000` too, with generation flat. See `wiki/19-vram-residency.md`.
+- **Right-sizing `-c` is real, but the exact sweet spot has moved and row 2 needs
+  re-measurement.** Row 2's `126976 → 2323` came from `llama-batched-bench`. Re-measured over
+  HTTP on 2026-09-01, `-c 126976` triggered the compute-buffer fallback and returned ~2112 t/s
+  on its one warm repetition — in the slow band, not the fast one. The ceiling curve
+  (130048 → 1850, 129024 → 2101, 126976 → 2323, 122880 → 2225) was always noisy near the top,
+  and the cliff sits close enough to `126976` that desktop VRAM drift can move a run across it.
+  **`-c 120000` (row 0c) is the better-evidenced choice** and is far enough below the boundary
+  to be stable.
+- **The KV cache never spills — but leave the DISPLAY GPU ≥ 500 MiB free.** That threshold,
+  not the context number, is what actually governs prefill here: below it WDDM quietly demotes
+  ~133 MiB off that adapter and prefill drops ~26%. Proved by pinning ballast VRAM at a fixed
+  `-c 120000` — 128 MiB on GPU1 reproduces the whole loss, 384 MiB on GPU0 costs nothing. So
+  **closing GPU-using desktop apps is worth up to 26% of prefill**, and `-ts 13,28` cannot
+  rescue `-c 130000` (it hard-OOMs GPU0). Verify with `scripts/check-vram-residency.ps1`, and
+  read `wiki/19` first: a healthy run legitimately reports 480–940 MiB of non-local memory, and
+  the spill that matters here is *below* that budget — detect it as a **delta against a matched
+  control**, never as an absolute number.
 - Needle test at 108k: **PASS** on rows 1 and 3.
+
+### `--no-mmap` — cuts idle system RAM ~94%, no measured speed cost
+
+Quick single-session check (curl-driven completions, 3×200 tokens each — **not** a full
+`bench-harness.ps1` campaign, so treat as informal, re-measure with repetitions before fully
+trusting the digits) at `-c 64000 -ctk q8_0 -ctv q8_0 -ts 13,29 -fa on -b 2048 -ub 512 -fit off
+-ngl 999 -sm layer -np 1`:
+
+| | load time | generation (avg of 3×200 tok) | system RAM (Working Set) after load |
+| --- | ---: | ---: | ---: |
+| with mmap (default) | 11.2 s | 84.8 t/s | **~20.8 GiB** |
+| `--no-mmap` | **6.1 s** | 87.7 t/s | **~1.3 GiB** |
+
+The generation difference (84.8 vs 87.7) is inside this repo's 8% noise floor — **not a
+performance trade, a strict win** for a fully-offloaded model, and load was faster too, not
+slower as expected.
+
+Root cause: `llama_mmap::impl::unmap_fragment()` on Windows (`llama-mmap.cpp:580-583`) is a
+**no-op** — `GGML_UNUSED(first); GGML_UNUSED(last);`, nothing else. The POSIX build really does
+call `munmap()` on the unused range once weights are uploaded to GPU (`llama-mmap.cpp:490-507`),
+but on Windows that release never happens, because `MapViewOfFile`/`UnmapViewOfFile` can only
+(un)map a *whole* view — there is no Windows equivalent of unmapping a sub-range. So the entire
+mmap'd GGUF file stays part of the process's resident working set for the life of the server,
+not just during load, on this platform specifically. `--no-mmap` avoids the problem instead of
+working around it: weight upload routes through 4×64 MiB pinned staging buffers instead
+(`llama-model-loader.cpp:1443-1454`), which *are* freed correctly after load (ordinary
+`ggml_backend_buffer_free`, no platform gap).
+
+Applies whenever `-ngl 999` reaches full offload — mmap's own benefit (zero-copy CPU-resident
+tensors) no longer applies at that point, so only the Windows-only cost remains.
+**Recommend `--no-mmap` by default on this machine for any config that fully offloads.**
+
+---
 
 ### Asymmetric KV (`q8_0`/`q4_0`) — measured, and deliberately not recommended
 
@@ -135,8 +201,8 @@ q8_0/q4_0 loads there. But it is **not** the config to run:
 | build-fa, q8_0/q4_0 | 2302 | 103.0 |
 | build-fa, q8_0/q8_0 | 2007 | 101.4 |
 
-`build-fa` also carries `GGML_SCHED_MAX_COPIES=1`, which disables pipeline parallelism, and it
-runs ~14% slower on prefill than stock at an identical config — cancelling the asymmetric gain.
+`build-fa` also carries `GGML_SCHED_MAX_COPIES=1`. Chapter 18's matched-rebuild A/B clears that
+flag as a <2% effect at `ub512`; the old stock-versus-build deficit was build-confounded.
 Use it **only** if you need context above 163840, and note `V=q4_0` has never been
 quality-gated on this model. c180224 loads but is unstable: generation swung 61–105 t/s across
 three runs with VRAM flat against the wall.

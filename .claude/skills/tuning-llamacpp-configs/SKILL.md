@@ -1,6 +1,6 @@
 ---
 name: tuning-llamacpp-configs
-description: Find the fastest raw llama.cpp / llama-server configuration for a GGUF model on the GPUs actually present, deciding context size, ubatch, tensor-split, KV cache type and CPU offload from measurement instead of guesswork. Use this whenever the user asks how to run, load, host or speed up a local GGUF model, asks which parameters or flags to use, asks how much context fits in VRAM, wants to benchmark a model, mentions llama-bench / llama-batched-bench / llama-fit-params / llama-server, reports that a local model is slower than expected, or hits CUDA out-of-memory while loading — even if they never say "tune" or "benchmark". Do NOT use for choosing which model to download, for prompt engineering, or for Ollama / LM Studio / vLLM-specific settings.
+description: Find the fastest raw llama.cpp / llama-server configuration for a GGUF model on the GPUs actually present, and explain surprising results from the matching llama.cpp source. Use whenever the user asks how to run, load, host or speed up a local GGUF model, asks why a benchmark or fallback behaves strangely, asks which flags to use or how much context fits in VRAM, wants to benchmark a model, mentions llama-bench / llama-batched-bench / llama-fit-params / llama-server, reports slower-than-expected behavior, or hits CUDA out-of-memory — even if they never say "tune" or "benchmark". Do NOT use for choosing which model to download, prompt engineering, or Ollama / LM Studio / vLLM-specific settings.
 argument-hint: "[path to .gguf]"
 shell: powershell
 allowed-tools: PowerShell Bash Read Write Edit Glob Grep
@@ -70,6 +70,13 @@ indistinguishable from an overflowing one. Say so plainly rather than tuning aro
 > **Verify per binary, don't assume.** Ask for slightly too much and check that it now *fails*:
 > a clean `cudaMalloc failed: out of memory` means covered; ~800–950 t/s with no error in the
 > log means still spilling. Global Settings covers everything, including future build paths.
+>
+> To measure residency directly rather than infer it from throughput, run
+> `scripts/check-vram-residency.ps1` — it samples the per-process WDDM `Non Local Usage`
+> counter, which `nvidia-smi` cannot see. **But read `wiki/19-vram-residency.md` first: a
+> healthy llama.cpp run legitimately holds 480–940 MiB of host buffers, so non-zero non-local
+> memory is not a spill.** A spill needs that figure *above* `llama-fit-params`' `Host` budget
+> **and** zero dedicated headroom.
 >
 > A freshly compiled binary is a **new path** and starts uncovered.
 
@@ -166,7 +173,7 @@ Non-negotiable rules, each of which was learned by being burned:
 
 The bundled harness enforces all five. Prefer running it over hand-rolling a loop.
 
-### 6. Interpret honestly
+### 6. Explain anomalies from source, then interpret honestly
 
 - **Differences under ~8% are noise** when a GPU also drives a display. Do not conclude
   from a 3% gain without repeating.
@@ -174,8 +181,34 @@ The bundled harness enforces all five. Prefer running it over hand-rolling a loo
   `failed to`, and `ignoring`. A run that silently fell back to a different execution
   mode is not the configuration you think you measured.
 - **An OOM row is data.** It locates the boundary, which is what you are mapping.
-- If a fallback path outperforms the intended path, **adopt the fallback** and make it
-  explicit so the config is reproducible.
+- If a fallback path appears to outperform the intended path, record the mode and run an
+  identical-arguments A/B before assigning causality. A successful retry is valid data, not
+  automatically a tuning recommendation.
+
+Before explaining *why*, identify the exact build that produced the result. Record the commit
+from `llama-server --version`, `llama-cli --version`, or the final `build:` row from a bench
+run. Only reason from the checked-out `llama.cpp/` source when that commit matches. On a
+mismatch, inspect the recorded revision with `git show` or a separate worktree, or rebuild from
+the current source; do not silently move the parent repository's submodule checkout.
+
+For a strange warning, fallback, non-monotonic curve, or flag effect, search the matching source
+for the emitted log text, option definition, allocation, and branch that selects the observed
+path. Follow callers far enough to state the mechanism. Treat the source as evidence of what the
+program can do and the controlled measurement as evidence of what happened here; require both
+before making a causal claim.
+
+**Prefer a verified local build for causal investigation.** It is usually newer than the root
+baseline and can be instrumented. Run it from its own `bin/`, label its commit and flags, and do
+not choose it merely by file timestamp. If source reading leaves doubt, add narrowly scoped
+logging, counters, or assertions around the suspected decision, then compare an instrumented
+build with a control built from the same commit, toolchain, CMake options, and runtime arguments.
+Use separate build directories and change only the diagnostic instrumentation. Keep diagnostic
+source edits reviewable and uncommitted unless the user asks to retain them.
+
+The root binaries remain an immutable historical baseline. They are useful for continuity, but
+a root-versus-local comparison cannot isolate a mechanism when source, compiler, or build flags
+differ. If no suitable local control exists, use the `building-llamacpp-cuda` skill to create
+matched control and instrumented builds; never overwrite the root binaries.
 
 ### 7. Validate over HTTP
 
@@ -266,10 +299,10 @@ judgement this skill encodes — the bottom two look attractive and are traps.
 | --- | --- | --- |
 | 1 | Close GPU-using desktop apps | **none** |
 | 2 | `q8_0/q8_0` instead of `f16/f16` | ~2% |
-| 3 | `q4_0/q4_0` instead of `q8_0/q8_0` (symmetric — still fast) | **negative — it is faster**, but **quality-gate it** |
+| 3 | `q4_0/q4_0` instead of `q8_0/q8_0` (symmetric — still fast) | usually small directly; may enable a faster `-ub`; **quality-gate it** |
 | 4 | Reduce `-c` a little (e.g. −2%) | **negative — prefill speeds up** |
 | 5 | `-ub` down one step | ~−20 to −30% prefill |
-| 6 | Rebuild `-DGGML_SCHED_MAX_COPIES=1` | **negative — it is faster** |
+| 6 | Rebuild `-DGGML_SCHED_MAX_COPIES=1` | saves scheduler memory; `ub512` speed effect measured below 2% |
 | 7 | `-ncmoe N` (experts to CPU) | **~−69% prefill for 2 of 40 layers** |
 
 Steps 3, 4 and 6 are counter-intuitive and are usually the answer:
@@ -279,12 +312,13 @@ Steps 3, 4 and 6 are counter-intuitive and are usually the answer:
   from 1850 to 2650 t/s. Only ever use a *symmetric compiled pair* (see traps).
 - **Context taxes prefill near the memory ceiling.** Dropping 2.4% of the window bought 26%
   more prefill. Right-sizing `-c` gives memory back *and* speeds prefill up.
-- **Pipeline parallelism is a loss on mismatched GPUs** — the pipeline stalls on the slower
-  card, and its 4 activation copies are often exactly what breaks the fit. But note:
+- **Scheduler copies can break a tight fit.** Do not generalise that into a throughput claim:
+  on the reference Qwopus `ub512` comparisons, runtime fallback and a one-copy build were only
+  1.6% apart, while changing the tensor split alone gave +12.8% prefill. Note:
   `GGML_SCHED_MAX_COPIES` is a **compile-time** define, **not** an environment variable.
   Setting `$env:GGML_SCHED_MAX_COPIES` does nothing. Either rebuild with
-  `-DGGML_SCHED_MAX_COPIES=1`, or raise `-ub` until the pipelined reserve fails and
-  llama.cpp falls back to the lean path on its own (see traps).
+  `-DGGML_SCHED_MAX_COPIES=1` when the memory saving is needed. Never raise `-ub` merely to
+  provoke an allocation failure (see traps and `wiki/18-fallback-causality.md`).
 
 ---
 
@@ -353,7 +387,17 @@ Load only what the current question needs.
 - `scripts/vram-budget.ps1` — hardware discovery, `-c` × `-ub` feasibility grid, candidate
   shortlist. **Run it; do not read it.**
 - `scripts/bench-harness.ps1` — dot-source, then call `Probe`. Fresh process per run, peak
-  VRAM sampling, append-only results, full log per run.
+  VRAM sampling, append-only results, full log per run, and explicit execution-mode recording
+  in new TSV files.
+- `scripts/scheduler-copies-ab.ps1` — interleaved matched-build A/B for scheduler copy count,
+  with an optional expected-runtime-fallback control.
+- `scripts/tensor-split-ab.ps1` — interleaved tensor-split A/B with build and all other runtime
+  arguments held fixed.
+- `scripts/check-vram-residency.ps1` — proves whether a config is entirely in VRAM or spilling
+  to system RAM, using the per-process WDDM `Non Local Usage` counter that `nvidia-smi` cannot
+  see. Also reports real HTTP prefill/generation per repetition with the cold rep separated.
+  **Read `wiki/19-vram-residency.md` before interpreting it: non-zero non-local memory is
+  normal, not a spill.** Quote the split (`-Ts '12,29'`) or PowerShell parses it as an array.
 - `scripts/needle-test.ps1` — long-context quality gate over HTTP. Run it before adopting
   any lossy KV setting, and to get real deep-context throughput.
 - `scripts/mtp-test.ps1` — speculative-decoding measurement over HTTP: baseline vs
@@ -365,8 +409,4 @@ binaries by default, overridable with `-OutDir`.
 
 Requires: llama.cpp CUDA build with `llama-fit-params.exe`, `llama-batched-bench.exe` and
 `llama-server.exe`; `nvidia-smi` on PATH; PowerShell 7+.
-
-
-
-
 

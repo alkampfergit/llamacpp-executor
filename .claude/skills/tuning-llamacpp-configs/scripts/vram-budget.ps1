@@ -238,8 +238,8 @@ if (-not $candidates) {
   $best  = $short | Select-Object -First 1
   $tsArg = if ($tsSuggest) { "'-ts','$tsSuggest'," } else { '' }
   Write-Host "`nNext: measure with the harness (fresh process per run, results appended)." -ForegroundColor Green
-  Write-Host '  # on mismatched GPUs, also try a HIGHER -ub: if the pipelined reserve fails,' -ForegroundColor DarkGray
-  Write-Host '  # llama.cpp falls back to a lean non-pipelined path that is often much faster.' -ForegroundColor DarkGray
+  Write-Host '  # do not raise -ub merely to provoke a scheduler allocation failure.' -ForegroundColor DarkGray
+  Write-Host '  # a successful retry saves memory; benchmark tensor split and ubatch separately.' -ForegroundColor DarkGray
   Write-Host '  . ./bench-harness.ps1 -Model <model.gguf>' -ForegroundColor DarkGray
   Write-Host ("  Probe 'c{0} ub{1}' @('-ub','{1}','-ctk','{2}','-ctv','{2}',{3}'-fa','on','-ngl','999','-fit','off') -Ctx {0}" `
     -f $best.ctx, $best.ub, $best.kv, $tsArg) -ForegroundColor DarkGray

@@ -52,7 +52,9 @@ and come back later when you want to know *why* it looks like that.
 | 14 | [The build experiment](14-build-experiment.md) | **The first numbers in this wiki not produced by the shipped binaries.** Two self-compiled builds differing in exactly two flags: what `GGML_CUDA_FA_ALL_QUANTS` is worth (asymmetric KV, measured), what `GGML_SCHED_MAX_COPIES=1` is worth (not throughput — VRAM), and why the control must be a *rebuild* rather than the baseline |
 | 15 | [The MMVQ Ampere cap](15-mmvq-ampere-experiment.md) | **A refuted hypothesis, and the instrument that could not have found it.** DFlash2 is unmerged upstream and worth 1.15× at the only quant that fits. Chasing a kernel-selection cliff instead produced a custom CUDA patch, two sweeps, and +0.1% — because **87% of this harness's throughput variance was draft-acceptance luck** (r² = 0.872). Corrects the *shape* of §10.7's `n-max` curve, and records that llama.cpp's per-GPU kernel tables change greedy output |
 | 16 | [Best command lines, and what backs them](16-best-commandlines.md) | **The provenance ledger for every recommendation in this wiki.** The commands themselves live in one place — `.claude/skills/tuning-llamacpp-configs/references/best-commandlines.md` — graded A/B/C by how well each is actually evidenced. This chapter is what that grade *means*: which configs are repeated and logged, which are a single run, which are prose someone later quoted as fact, the twelve GGUFs on disk that have never been measured at all, and the fine-tune confound hiding inside chapter 6's "Q3_K kernels are slower than Q4_K" |
-| 17 | [You cannot turn off pipeline parallelism with `-ngl`](17-pipeline-parallelism-ngl.md) | **A correct mechanism with an unmeasured cost.** The fastest MoE config here gets its speed from an *allocation failing*, which chapters 6 and 7 call accidental. `cparams.pipeline_parallel` really is the switch, and `-ngl` really does reach it — but a model has `n_layer_all`+1 slots, so `-ngl n_layer_all` strands one layer on the CPU at **−54% prefill**. `-ngl 42` re-enables pipelining, because the gate *is* the full-offload test. The rebuild really is the only route, and this chapter withdraws a claim that it wasn't |
+| 17 | [You cannot turn off pipeline parallelism with `-ngl`](17-pipeline-parallelism-ngl.md) | `-ngl n_layer_all` strands one layer on CPU at **−54% prefill**; full offload and the pipeline gate cannot be separated with this flag |
+| 18 | [The retry worked; the split made it fast](18-fallback-causality.md) | **The controlled answer to the allocation-warning observation.** Same-source A/Bs put runtime fallback and a one-copy build within 1.6%, while changing only `-ts 12,29` to `13,28` gives **+12.8% prefill**. The warning is valid recovery; the layer distribution is the performance win |
+| 19 | [Proving what is actually in VRAM](19-vram-residency.md) | **The controlling variable is free VRAM on the GPU that drives your display — threshold ~500 MiB — and `-c` only matters because it eats into that.** 128 MiB of deliberately pinned ballast on GPU1 reproduces the entire −26% at a context that was fast seconds earlier, while 384 MiB on GPU0 costs nothing. The KV cache never spills; ~133 MiB of *other* things quietly do. Why no absolute "is it spilling?" threshold can detect it, why closing a browser is now a measured tuning action, and the `-c 120000` sweet spot worth **+30%** |
 
 ---
 
@@ -96,7 +98,8 @@ wiki/
 ├── 14-build-experiment.md        ← CONTROL vs TREATMENT, self-compiled
 ├── 15-mmvq-ampere-experiment.md  ← a REFUTED result, and how the harness was lying
 ├── 16-best-commandlines.md       ← provenance for the per-model command-line table
-├── 17-pipeline-parallelism-ngl.md ← a correct mechanism with an unmeasured cost
+├── 17-pipeline-parallelism-ngl.md ← why -ngl cannot disable it without CPU offload
+├── 18-fallback-causality.md       ← controlled fallback vs split A/B
 ├── pre-build-plan.md             ← written BEFORE the build, so the design can be judged
 ├── nvidia-sysmem-fallback-paths.md
 └── benchmarks/
@@ -150,4 +153,3 @@ Both live under `S:\HuggingFace\lmstudio\`:
 Both are `qwen35moe`: 35.5 B total parameters, ~3 B active per token, 256 experts with 8
 used per token, and a **hybrid attention design** that makes long context unusually cheap.
 Chapter 4 explains why that last point is the reason 130k context is possible at all.
-

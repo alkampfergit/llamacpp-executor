@@ -273,8 +273,8 @@ For this machine and an agentic coding workload, in order of value per unit of e
 | --- | --- | --- | --- | --- |
 | 1 | **Prompt caching** (`-np 1`, `-cram`) | **~34× on repeat prefill** | 0 (host RAM) | proven |
 | 2 | Not overflowing VRAM (sysmem policy) | up to 5× | 0 | proven |
-| 3 | Non-pipelined execution on mismatched GPUs | **+43% prefill** | frees memory | measured (§6.2) |
-| 4 | `q4_0` KV enabling `-ub 1024` | +43% prefill | frees 700 MiB | measured; needle-tested (§6.4) |
+| 3 | Better Qwopus tensor split (`12,29` → `13,28`) | **+12.8% prefill** | redistributes VRAM | controlled, 5 reps (ch.18) |
+| 4 | `q4_0` KV enabling `-ub 1024` | +43% in the historical combined config | frees 700 MiB | measured; needle-tested (§6.4) |
 | 5 | Right-sizing `-c` (130048 → 126976) | +26% prefill | frees memory | measured (§6.5) |
 | 6 | `-ub 512` over 256 | +21% prefill | +819 MiB | measured |
 | 7 | `ngram-simple` speculation | 0% on fresh generation | 0 MiB | measured; untested on edit-style work |
@@ -292,4 +292,3 @@ breaking a configuration that only had 24 MiB of slack.
 ---
 
 Back to the [index](README.md).
-

@@ -18,9 +18,18 @@ nvidia-smi --query-gpu=index,memory.used,memory.total,utilization.gpu --format=c
 
 Open Task Manager → Performance → your GPU, and look at **Shared GPU Memory**.
 
+> ⚠️ **`Shared GPU Memory > 0` on its own is NOT overflow.** llama.cpp always keeps several
+> hundred MiB of host-visible buffers, and Windows counts those here: healthy runs on this box
+> read **480–940 MiB**, and the *fastest* configuration measured had the *highest* figure.
+> Overflow needs the **card also being full** — see the signature table below, and
+> [chapter 19](19-vram-residency.md) for the per-process counter and the calibration against
+> `llama-fit-params`' `Host` budget. `scripts/check-vram-residency.ps1` applies the rule for you.
+
 | Signature | Cause |
 | --- | --- |
-| `memory.used` pinned at the card's maximum, **Shared GPU Memory > 0**, low GPU utilisation | **VRAM overflow into system RAM** → §8.2 |
+| `memory.used` pinned at the card's maximum (**no headroom left**) **and** Shared GPU Memory far above llama.cpp's predicted `Host` budget, low GPU utilisation | **VRAM overflow into system RAM** → §8.2 |
+| Shared GPU Memory non-zero but the card still has headroom | **Normal.** llama.cpp's own host buffers → not a fault |
+| Prefill down ~25%, no error, everything "fits", and the **display GPU** has < ~500 MiB free | **WDDM demoting ~130 MiB off the display adapter** → close GPU-using desktop apps, or reduce `-c`. See [chapter 19](19-vram-residency.md) |
 | Both GPUs at ~0–6% utilisation, CPU at ~50% | **Layers running on the CPU** → §8.3 |
 | GPUs busy, but throughput still low | Wrong `-ub`, or a slow KV type → §8.4 |
 
@@ -113,13 +122,11 @@ Check, in order:
    A `Host` row in the thousands of MiB instead of ~800 is the signature. This is the
    nastiest trap in the wiki (§6.6).
 3. **`-ub` too small?** 128 gives 1368 t/s where 512 gives 2651 (§6.3).
-4. **`-c` much larger than you need?** The window taxes prefill even when empty — 31% at
-   130k (§6.4).
-5. **Pipeline parallelism hurting you?** On mismatched GPUs the pipelined path is often
-   slower than the fallback. Note that `GGML_SCHED_MAX_COPIES` is a **compile-time** define —
-   setting it as an environment variable does nothing. Rebuild with
-   `-DGGML_SCHED_MAX_COPIES=1`, or reach the lean path by raising `-ub` until the pipelined
-   reserve fails (§6.2).
+4. **`-c` much larger than you need?** The window consumes KV memory and may push compute
+   buffers against the VRAM cliff; the old "31% empty-context tax" explanation was withdrawn.
+5. **Bad tensor split or scheduler-copy pressure?** Re-derive `-ts` before blaming pipeline
+   mode. `GGML_SCHED_MAX_COPIES` is compile-time only, and deliberately raising `-ub` until an
+   allocation fails is not a sound speed-tuning method (§6.2 and chapter 18).
 
 ---
 
@@ -158,10 +165,10 @@ Compute buffers didn't fit. Lower `-ub`, reduce `-c`, or rebuild with
 
 ### `sched_reserve: compute buffer allocation failed, retrying without pipeline parallelism`
 
-**A warning, and often good news.** llama.cpp fell back to non-pipelined execution, which on
-mismatched GPUs is *faster* — 2650 vs 1850 t/s here (§6.2). Profiles B in chapter 7 depend on
-this happening. To stop depending on an allocation failure, rebuild with
-`-DGGML_SCHED_MAX_COPIES=1`; setting the environment variable does **not** work.
+**A recoverable warning.** llama.cpp is retrying with a smaller scheduler. If a result row or
+`listening on` follows, record the run as successful fallback; if the retry also fails, it is a
+real OOM. Controlled `ub512` tests put fallback and a one-copy build within 1.6%, so do not call
+the warning a speedup. See chapter 18. The environment variable still does **not** work.
 
 ### `model has unused tensor blk.40.… -- ignoring`
 

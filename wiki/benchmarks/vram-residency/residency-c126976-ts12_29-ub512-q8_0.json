@@ -1,0 +1,61 @@
+{
+  "label": "c126976-ts12_29-ub512-q8_0",
+  "ctx": 126976,
+  "ts": "12,29",
+  "ub": 512,
+  "ctk": "q8_0",
+  "ctv": "q8_0",
+  "spill_mib": 1044.0,
+  "verdict": "SPILLING",
+  "adapters": [
+    {
+      "adapter": "GPU1",
+      "dedicated_mib": 15062.6,
+      "non_local_mib": 554.0,
+      "shared_mib": 554.0
+    },
+    {
+      "adapter": "GPU0",
+      "dedicated_mib": 7404.0,
+      "non_local_mib": 490.0,
+      "shared_mib": 490.0
+    }
+  ],
+  "smi_peak": [
+    {
+      "gpu": 0,
+      "used_mib": 7403,
+      "total_mib": 8192,
+      "headroom_mib": 789
+    },
+    {
+      "gpu": 1,
+      "used_mib": 15871,
+      "total_mib": 16311,
+      "headroom_mib": 440
+    }
+  ],
+  "reps": [
+    {
+      "rep": 1,
+      "prompt_n": 4919,
+      "prompt_ms": 2827.5,
+      "prefill_tps": 1739.7,
+      "gen_tps": 73.75
+    },
+    {
+      "rep": 2,
+      "prompt_n": 4920,
+      "prompt_ms": 2329.2,
+      "prefill_tps": 2112.3,
+      "gen_tps": 89.27
+    }
+  ],
+  "alloc_warnings": [
+    "0.04.756.582 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 813.13 MiB on device 0: cudaMalloc failed: out of memory",
+    "0.04.756.590 E ggml_gallocr_reserve_n_impl: failed to allocate CUDA0 buffer of size 852623872",
+    "0.04.756.594 E graph_reserve: failed to allocate compute buffers",
+    "0.04.756.610 W sched_reserve: compute buffer allocation failed, retrying without pipeline parallelism"
+  ],
+  "log": "S:\\OsDevelop\\llamacpp\\wiki\\benchmarks\\vram-residency\\residency-c126976-ts12_29-ub512-q8_0.log"
+}

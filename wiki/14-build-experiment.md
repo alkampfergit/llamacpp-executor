@@ -365,9 +365,11 @@ The mechanism is real. `ggml/src/CMakeLists.txt:4` compiles the value in as a de
 sched->n_copies = parallel ? GGML_SCHED_MAX_COPIES : 1;
 ```
 
-With the value set to 1, `n_copies` is 1 whether or not the caller asked for parallel — the
-pipelined path is gone at compile time. (Compile-time only: an environment variable of that
-name does nothing, as CLAUDE.md already records.)
+With the value set to 1, `n_copies` is 1 whether or not the caller asked for parallel.
+(Compile-time only: an environment variable of that name does nothing.) Chapter 18 later found
+one nuance: the context's `pipeline_parallel` boolean remains true in this build and still
+guards a graph-reuse synchronization, while the runtime fallback clears it. The scheduler copy
+count is equivalent; the complete context state is not literally identical.
 
 **But the predicted speed-up does not exist.** On the two symmetric configurations — where
 source inspection says `FA_ALL_QUANTS` is inert, so the flag under test is isolated — the
@@ -401,9 +403,9 @@ non-pipelined execution is fast. That fallback fires when an allocation *fails*,
 when the configuration was too big for VRAM; what was being measured was a run that had
 stopped over-committing.
 
-> **Restated:** the fallback was not faster *because* it was non-pipelined. It was faster
-> because it had stopped spilling. `GGML_SCHED_MAX_COPIES=1` gives you the ~845 MiB that made
-> that difference, deterministically — and costs you perhaps 3% of prefill for it.
+> **Restated with chapter 18's controlled Qwopus data:** the fallback was not materially faster
+> because it was non-pipelined. It is a memory recovery. On Qwopus the large gain came from the
+> `13,28` tensor split (+12.8%); fallback versus a one-copy build was only 1.6% apart.
 
 Which is still a good trade on this box. 845 MiB is not a rounding error when the display GPU's
 idle usage drifts by ~1 GiB between sessions, and it is close to the 1.1 GiB an MTP draft graph

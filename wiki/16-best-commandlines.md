@@ -40,6 +40,10 @@ The grades are not decoration. §16.3 is what happens when a C is mistaken for a
 | | — | `benchmarks/mmvq-experiment*/` (server-side, chapter 15) | A |
 | `Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M` (MoE, 20.21 GiB) | 51 | `benchmarks/results.tsv` | A/B |
 | | 22 | `benchmarks/a3b-asym-kv/` | A |
+| | 10 | `benchmarks/runtime-fallback-vs-max1/` | A |
+| | 10 | `benchmarks/scheduler-copies-ab-ub512/` | A |
+| | 10 | `benchmarks/tensor-split-ab/` | A |
+| | 6 | `benchmarks/scheduler-copies-ab-ub256/` | pilot |
 | `Qwen3.6-35B-A3B` × 3 quants | 11 | `benchmarks/qwen36-quant-compare/` | A |
 | **everything else on disk** | **0** | — | — |
 

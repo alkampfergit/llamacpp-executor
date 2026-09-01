@@ -1,7 +1,7 @@
 # Chapter 17 — You cannot turn off pipeline parallelism with `-ngl`
 
-The fastest configuration for the MoE on this box gets its speed from an **allocation failing**.
-llama.cpp tries to reserve pipelined compute buffers, cannot fit them, logs
+The fastest measured stock configuration for the MoE on this box includes a **recovered
+allocation failure**. llama.cpp tries to reserve pipelined compute buffers, cannot fit them, logs
 
 ```
 ggml_backend_cuda_buffer_type_alloc_buffer: allocating 444.13 MiB on device 0: cudaMalloc failed: out of memory
@@ -9,10 +9,10 @@ graph_reserve: failed to allocate compute buffers
 sched_reserve: compute buffer allocation failed, retrying without pipeline parallelism
 ```
 
-…and the lean path that follows is **2371 t/s prefill against roughly 1850 pipelined**. Chapter 6
-§6.2 and chapter 7 §7.5 both flag how unsatisfying that is: the speed is reproducible but
-*accidental*, and they say the only deterministic fix is a rebuild with
-`-DGGML_SCHED_MAX_COPIES=1`.
+…and then completes at **2371 t/s prefill**. This chapter originally compared that with a
+roughly 1850 t/s run and credited the retry. [Chapter 18](18-fallback-causality.md) now controls
+the variables: the `13,28` split is the large effect (+12.8%), while runtime fallback and a
+one-copy build are only 1.6% apart at identical `c64000 / ub512 / ts13,28` settings.
 
 This chapter tests a way to do it without rebuilding. **The way does not work, the wiki was
 right, and the reason is worth knowing** — because anyone who reads the relevant source will
@@ -150,8 +150,7 @@ does not tell you what a flag costs.**
 
 ## 17.5 What to actually run
 
-Keep `-ngl 999`. The accidental fallback remains the fastest measured configuration for this
-model, and this campaign is its best-evidenced measurement to date:
+Keep `-ngl 999`. This remains the best-evidenced stock configuration for this model:
 
 ```
 -c 64000 -np 1 -ctk q8_0 -ctv q8_0 -ngl 999 -sm layer -ts 13,28 -fa on -b 2048 -ub 512 -fit off
@@ -163,9 +162,9 @@ corroborated by a real request through `llama-server` on the same config: **2314
 
 Two properties worth noting:
 
-- **`-ts 13,28` is doing the work, not `-c 64000`.** 13:28 puts ~31.7% of the model on the 3070
-  against 12:29's 29.3%, which is what makes the 444 MiB reservation fail. This is chapter 6's
-  "raise `-ub` until the pipelined reserve fails" trick achieved through the split instead.
+- **`-ts 13,28` is doing the performance work, not the retry.** 13:28 puts ~31.7% of the model
+  on the 3070 against 12:29's 29.3%. A five-repetition same-build A/B in chapter 18 measures
+  +12.8% prefill from that split alone. It also makes the 444 MiB reservation fail on stock.
 - **The trigger is on device 0, and that is unusually good.** Configurations that exploit this
   fallback normally depend on the *display* GPU staying tight, which breaks the moment a browser
   opens. Here the failing allocation is on the 3070, which no desktop app ever touches — so it
@@ -181,15 +180,15 @@ of that, and it is not worth 54% of prefill.
 | | |
 | --- | --- |
 | **Refuted** | That `-ngl <n_layer_all>` disables pipeline parallelism usefully. It does disable it — at −54% prefill, because it strands one layer on the CPU |
-| **Corroborated** | `known-traps.md` §4, ch6 §6.2, ch7 §7.5: `GGML_SCHED_MAX_COPIES` is compile-time only (no `getenv`, no CLI flag, re-verified) and a rebuild is the only deterministic route |
+| **Corroborated** | `GGML_SCHED_MAX_COPIES` is compile-time only (no `getenv`, no CLI flag, re-verified); `-ngl` cannot disable it without leaving a layer on CPU |
 | **New** | `cparams.pipeline_parallel` (`llama-context.cpp:428`) is the real switch, and its `n_gpu_layers > n_layer_all` term is the same thing as "fully offloaded" — so the two cannot be separated. This model has **42** assignable slots, not 41 |
 | **Best measured** | Qwopus 35B-A3B at `-c 64000`, `q8_0` KV, `-ts 13,28`, `-ngl 999`: **2371 / 98.5**, 3 reps |
-| **Untested** | Why `build-fa` — which has `GGML_SCHED_MAX_COPIES=1` compiled in, the *supposedly correct* fix — measured **slower** than stock (2007 vs 2323 at c126976). Either the flag is not equivalent to the runtime fallback, or `build-fa`'s other differences (+73 commits, Clang→MSVC) cost more than it saves. Separating them needs a build with **only** `-DGGML_SCHED_MAX_COPIES=1` against `build-control` |
+| **Resolved in ch.18** | Matched rebuilds show max-copies 1 versus 4 differs by +1.8% at `ub512`; runtime fallback versus max-copies 1 differs by 1.6%. Neither explains the large gain. The `13,28` split does: +12.8% with scheduler mode fixed |
 
 > **The closing point.** This is the third time in this wiki that a mechanism has been read
 > correctly out of the source and then over-trusted. Chapter 14 caught a flag that was never
 > read; chapter 15 caught an instrument noisier than its effect; this one caught a true premise
-> with an unmeasured cost. The habit that keeps working is dull and cheap: **measure the thing
+> with an initially unmeasured cost. The habit that keeps working is dull and cheap: **measure the thing
 > you are about to recommend, before recommending it.** Six runs and twelve minutes were enough
 > to overturn a command line I had already handed over.
 
@@ -197,5 +196,8 @@ of that, and it is not worth 54% of prefill.
 
 Evidence: `wiki/benchmarks/pipeline-parallel-ngl/` — 6 rows, 6 logs, plus a `PROVENANCE.md`.
 
+Correction and controlled causal A/B: [chapter 18](18-fallback-causality.md).
+
 Previous: [Chapter 16 — Best command lines](16-best-commandlines.md) ·
+Next: [Chapter 18 — The retry worked; the split made it fast](18-fallback-causality.md) ·
 Back to [README](README.md).

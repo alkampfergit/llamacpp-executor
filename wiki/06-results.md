@@ -68,16 +68,18 @@ environment. The evidence was in my own logs: a run **with the variable set** st
 allocate 1407 MiB of pipelined buffers and then fell back. The earlier "+13%" I attributed to
 it was run-to-run variance.
 
-**The underlying effect is real, and larger than I first measured.** What actually happens:
+**The recovery mechanism is real. The old throughput explanation was not controlled.** What
+actually happens:
 
 ```
 graph_reserve: failed to allocate compute buffers
 sched_reserve: compute buffer allocation failed, retrying without pipeline parallelism
 ```
 
-When pipelined buffers don't fit, llama.cpp retries **without** pipeline parallelism — a mode
-that is both smaller *and faster* on mismatched GPUs, because a pipeline runs at the speed of
-its slowest stage and the 3070 is much slower than the 5060 Ti.
+When the larger reservation does not fit, llama.cpp retries with one scheduler copy. That mode
+is smaller. Chapter 18 later held the build, model, split and runtime arguments fixed: fallback
+and a one-copy build differed by only 1.6% at `ub512`, while the `13,28` tensor split itself was
+12.8% faster than `12,29` with scheduler mode fixed.
 
 And it is reproducible. Three identical runs of `q4_0` KV at `-ub 1024`, 130k:
 
@@ -87,11 +89,11 @@ And it is reproducible. Three identical runs of `q4_0` KV at `-ub 1024`, 130k:
 | 2 | 2599 | 105.3 |
 | 3 | 2594 | 104.9 |
 
-Mean ~2650, spread ±3%. This is a stable operating point, not a fluke.
+Mean ~2650, spread ±3%. This is a stable operating point, not a fluke; attributing it to the
+fallback was the mistake.
 
-> **So the fast path is reached by memory pressure, not by a flag.** That is uncomfortable —
-> you are relying on an allocation failing. It is reproducible while your VRAM conditions are
-> stable, but if you freed ~1.4 GiB the pipelined path might succeed and run *slower*.
+> **So this configuration recovers from memory pressure.** Do not treat the allocation failure
+> as the source of its speed or deliberately tune toward it.
 >
 > **The deterministic fix is to rebuild:**
 > ```
@@ -357,4 +359,3 @@ Synthetic (`llama-batched-bench`, 8192-token prompt) unless marked *real*.
 ---
 
 Next: [Chapter 7 — Recommended configurations](07-recommended-configs.md).
-

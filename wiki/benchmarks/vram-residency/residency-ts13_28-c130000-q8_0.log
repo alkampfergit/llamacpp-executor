@@ -1,0 +1,41 @@
+0.00.110.788 W DEPRECATED: --mmap and --no-mmap are deprecated. use --load-mode mmap instead
+0.00.110.906 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.258.614 W srv  llama_server: -----------------
+0.00.258.620 W srv  llama_server: CORS is set to allow all origins ('*') and no API key is set
+0.00.258.621 W srv  llama_server: this can be a security risk (cross-origin attacks)
+0.00.258.622 W srv  llama_server: more info: https://github.com/ggml-org/llama.cpp/pull/25655
+0.00.258.622 W srv  llama_server: -----------------
+0.00.274.295 I srv    load_model: loading model 'S:\HuggingFace\lmstudio\Jackrong\Qwopus3.6-35B-A3B-Coder-MTP-GGUF\Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf'
+0.00.610.080 W model has unused tensor blk.40.attn_norm.weight (size = 8192 bytes) -- ignoring
+0.00.610.095 W model has unused tensor blk.40.post_attention_norm.weight (size = 8192 bytes) -- ignoring
+0.00.610.115 W model has unused tensor blk.40.attn_q.weight (size = 9437184 bytes) -- ignoring
+0.00.610.123 W model has unused tensor blk.40.attn_k.weight (size = 589824 bytes) -- ignoring
+0.00.610.130 W model has unused tensor blk.40.attn_v.weight (size = 860160 bytes) -- ignoring
+0.00.610.155 W model has unused tensor blk.40.attn_output.weight (size = 4718592 bytes) -- ignoring
+0.00.610.163 W model has unused tensor blk.40.attn_q_norm.weight (size = 1024 bytes) -- ignoring
+0.00.610.170 W model has unused tensor blk.40.attn_k_norm.weight (size = 1024 bytes) -- ignoring
+0.00.610.178 W model has unused tensor blk.40.ffn_gate_inp.weight (size = 2097152 bytes) -- ignoring
+0.00.610.186 W model has unused tensor blk.40.ffn_down_exps.weight (size = 220200960 bytes) -- ignoring
+0.00.610.235 W model has unused tensor blk.40.ffn_gate_exps.weight (size = 150994944 bytes) -- ignoring
+0.00.610.244 W model has unused tensor blk.40.ffn_up_exps.weight (size = 150994944 bytes) -- ignoring
+0.00.610.252 W model has unused tensor blk.40.ffn_gate_inp_shexp.weight (size = 8192 bytes) -- ignoring
+0.00.610.260 W model has unused tensor blk.40.ffn_gate_shexp.weight (size = 589824 bytes) -- ignoring
+0.00.610.269 W model has unused tensor blk.40.ffn_up_shexp.weight (size = 589824 bytes) -- ignoring
+0.00.610.276 W model has unused tensor blk.40.ffn_down_shexp.weight (size = 860160 bytes) -- ignoring
+0.00.610.286 W model has unused tensor blk.40.nextn.eh_proj.weight (size = 4718592 bytes) -- ignoring
+0.00.610.294 W model has unused tensor blk.40.nextn.enorm.weight (size = 8192 bytes) -- ignoring
+0.00.610.303 W model has unused tensor blk.40.nextn.hnorm.weight (size = 8192 bytes) -- ignoring
+0.00.610.327 W model has unused tensor blk.40.nextn.shared_head_norm.weight (size = 8192 bytes) -- ignoring
+0.04.900.329 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 831.13 MiB on device 0: cudaMalloc failed: out of memory
+0.04.900.339 E ggml_gallocr_reserve_n_impl: failed to allocate CUDA0 buffer of size 871498240
+0.04.900.340 E graph_reserve: failed to allocate compute buffers
+0.04.900.354 W sched_reserve: compute buffer allocation failed, retrying without pipeline parallelism
+0.04.915.137 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 433.28 MiB on device 0: cudaMalloc failed: out of memory
+0.04.915.143 E ggml_gallocr_reserve_n_impl: failed to allocate CUDA0 buffer of size 454328448
+0.04.915.144 E graph_reserve: failed to allocate compute buffers
+0.04.924.846 E llama_init_from_model: failed to initialize the context: failed to allocate compute pp buffers
+0.04.924.852 E cmn  common_init_: failed to create context with model 'S:\HuggingFace\lmstudio\Jackrong\Qwopus3.6-35B-A3B-Coder-MTP-GGUF\Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf'
+0.04.924.859 E cmn  common_init_: failed to create context with model 'S:\HuggingFace\lmstudio\Jackrong\Qwopus3.6-35B-A3B-Coder-MTP-GGUF\Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf'
+0.04.924.861 E srv    load_model: failed to create_context with model 'S:\HuggingFace\lmstudio\Jackrong\Qwopus3.6-35B-A3B-Coder-MTP-GGUF\Qwopus3.6-35B-A3B-Coder-MTP-Q4_K_M.gguf'
+0.04.924.870 I srv    operator(): operator(): cleaning up before exit...
+0.04.926.488 E srv  llama_server: exiting due to model loading error

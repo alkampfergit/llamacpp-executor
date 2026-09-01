@@ -27,6 +27,20 @@ inexplicably slow, non-monotonic behaviour, a silent fallback, or any gain near 
 floor. Prefer `Grep` over the submodule to a web search — the checked-out code is the code
 that produced the measurement.
 
+## Prefer a matched local build for causal testing
+
+For investigations into *why* a result occurs, prefer a verified build under `llama.cpp/` over
+the immutable root baseline. A local build is usually newer, its source is available, and narrow
+logging, counters or assertions can be added around the suspected decision. Verify the build's
+commit rather than choosing by timestamp, and run it from its own `bin/`.
+
+Instrumentation is an experiment: build a control and an instrumented variant from the same
+commit, toolchain and CMake options, use identical runtime arguments, and keep them in separate
+build directories. Change only the diagnostic code. A comparison against the root binaries does
+not isolate instrumentation because source, compiler and flags may also differ. Never modify or
+replace the root binaries while doing this, and do not commit diagnostic source edits unless the
+user asks to retain them.
+
 ## Keep the submodule current before reading it
 
 Stale source explains nothing about a binary built from a newer tree. Before investigating,
@@ -81,8 +95,9 @@ baseline.
 ## Scripts live in ONE place — `.claude/skills/tuning-llamacpp-configs/scripts/`
 
 There is no `wiki/scripts/` directory. Every operative PowerShell script — the benchmark
-harness, the MTP and needle quality gates, the `serve-*` launchers, and the deep-probe /
-resume-benchmarks helpers — lives under `.claude/skills/tuning-llamacpp-configs/scripts/`.
+harness, the MTP and needle quality gates, the VRAM-residency checker, the `serve-*` launchers,
+and the deep-probe / resume-benchmarks helpers — lives under
+`.claude/skills/tuning-llamacpp-configs/scripts/`.
 The wiki's chapters only *reference* these scripts by path; they do not carry their own copy.
 
 This used to not be true. Three scripts (`bench-harness.ps1`, `mtp-test.ps1`,
@@ -142,8 +157,10 @@ recording anything.
 3. **Every number is labelled with the build that produced it.** Baseline is
    `build 10509, commit fe8156f78, Clang 20.1.8, CUDA 13.3`. Anything else must say so.
 4. **The result row exists.** A run that logged `out of memory` but still produced a row
-   succeeded via llama.cpp's non-pipelined fallback — it is `OK`, not `OOM`. 17 rows were once
-   mislabelled this way and would have been discarded by anyone filtering on status.
+   succeeded via llama.cpp's one-copy fallback — it is `OK`, not `OOM`. New result files record
+   `execution_mode=fallback-single-copy`; a retry with no result is `fallback-failed` and remains
+   `OOM`. Do not infer a speedup from the mode label: chapter 18 isolates the tensor split as the
+   large effect.
 
 ## "What should I run for model X?" — one file answers this
 

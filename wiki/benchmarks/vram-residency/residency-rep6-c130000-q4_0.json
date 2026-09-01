@@ -1,0 +1,84 @@
+{
+  "label": "rep6-c130000-q4_0",
+  "ctx": 130000,
+  "ts": "12,29",
+  "ub": 512,
+  "ctk": "q4_0",
+  "ctv": "q4_0",
+  "spill_mib": 1812.0,
+  "verdict": "SPILLING",
+  "adapters": [
+    {
+      "adapter": "GPU1",
+      "dedicated_mib": 15047.3,
+      "non_local_mib": 938.0,
+      "shared_mib": 938.0
+    },
+    {
+      "adapter": "GPU0",
+      "dedicated_mib": 7630.8,
+      "non_local_mib": 874.0,
+      "shared_mib": 874.0
+    }
+  ],
+  "smi_peak": [
+    {
+      "gpu": 0,
+      "used_mib": 7629,
+      "total_mib": 8192,
+      "headroom_mib": 563
+    },
+    {
+      "gpu": 1,
+      "used_mib": 15819,
+      "total_mib": 16311,
+      "headroom_mib": 492
+    }
+  ],
+  "reps": [
+    {
+      "rep": 1,
+      "prompt_n": 4922,
+      "prompt_ms": 2482.5,
+      "prefill_tps": 1982.7,
+      "gen_tps": 78.09
+    },
+    {
+      "rep": 2,
+      "prompt_n": 4924,
+      "prompt_ms": 2294.0,
+      "prefill_tps": 2146.5,
+      "gen_tps": 87.5
+    },
+    {
+      "rep": 3,
+      "prompt_n": 4922,
+      "prompt_ms": 2313.9,
+      "prefill_tps": 2127.1,
+      "gen_tps": 86.42
+    },
+    {
+      "rep": 4,
+      "prompt_n": 4922,
+      "prompt_ms": 2181.0,
+      "prefill_tps": 2256.7,
+      "gen_tps": 88.7
+    },
+    {
+      "rep": 5,
+      "prompt_n": 4921,
+      "prompt_ms": 2225.7,
+      "prefill_tps": 2211.0,
+      "gen_tps": 89.92
+    },
+    {
+      "rep": 6,
+      "prompt_n": 4919,
+      "prompt_ms": 2243.0,
+      "prefill_tps": 2193.0,
+      "gen_tps": 89.31
+    }
+  ],
+  "alloc_warnings": [],
+  "log": "S:\\OsDevelop\\llamacpp\\wiki\\benchmarks\\vram-residency\\residency-rep6-c130000-q4_0.log"
+}

@@ -479,14 +479,13 @@ attached: **it is still unmeasured for throughput on this machine, in either dir
 This is not one of the report's claims. It is our error, it has been in this wiki since chapter
 6, and looking up option names to grade someone else's flags is what surfaced it.
 
-Every rebuild recommendation in this repository says:
+Every rebuild recommendation in this repository used to say:
 
 ```
--DGGML_SCHED_MAX_COPIES=1
+-DLLAMA_SCHED_MAX_COPIES=1
 ```
 
-**There is no such option.** `grep -rn 'GGML_SCHED_MAX_COPIES' llama.cpp/` returns nothing. The
-option is:
+**There is no such `LLAMA_` option.** The real option is:
 
 ```cmake
 # ggml/CMakeLists.txt:188
@@ -501,7 +500,7 @@ forwards ten legacy `LLAMA_*` names to their `GGML_*` equivalents — `LLAMA_CUB
 
 What would have happened had we run the rebuild as documented: CMake accepts the unknown `-D`,
 stores it in the cache, prints `Manually-specified variables were not used by the project:
-GGML_SCHED_MAX_COPIES` as a *warning*, and compiles with `GGML_SCHED_MAX_COPIES=4`. The build
+LLAMA_SCHED_MAX_COPIES` as a *warning*, and compiles with `GGML_SCHED_MAX_COPIES=4`. The build
 succeeds. The binary is pipelined exactly as before. And our build script's console filter
 (`'^\[\d+/\d+\]|^-- |error|Error|FAILED|fatal'`) does not match the string `CMake Warning`, so
 the only notice would have gone to the log file nobody reads on a green build.
@@ -517,7 +516,7 @@ the only notice would have gone to the log file nobody reads on a green build.
 > any measurement you would take with it — one `grep`, and it also hands you the default, which
 > is the thing that decides whether the flag is worth passing at all.
 
-**Twenty-nine occurrences** need the substitution `GGML_SCHED_MAX_COPIES` →
+**Twenty-nine occurrences** needed the substitution `LLAMA_SCHED_MAX_COPIES` →
 `GGML_SCHED_MAX_COPIES`: **19 in `wiki/`** (chapters 0, 3, 4, 6, 7, 8, 10, 11 and, at the time
 of this audit, `wiki/scripts/serve-qwopus-130k.ps1` — that script has since moved to
 `.claude/skills/tuning-llamacpp-configs/scripts/serve-qwopus-130k.ps1`) and **10 in
@@ -600,7 +599,7 @@ the measurement the rebuild exists to make possible. It is not a measurement the
 | **What it gets wrong** | Peer access as this box's constraint — llama.cpp does not enable P2P unless you ask for it, and our splits show a memory cliff, not a transfer cost (§12.9). Tensor splits of `70,30`–`80,20` and `2,1`, all of them on the dead side of the `23,42` cliff, and all of them the reverse of the report's own stated intent (§12.10) |
 | **What was already here** | The `FA_ALL_QUANTS` default and its cost. The `120a` rewrite. `bin\Release\` versus flat `bin\`. The 16-attention-layer architecture and the bandwidth ceiling. The impact ranking, which matches [KEY FINDINGS](00-KEY-FINDINGS.md) row for row |
 | **Unverifiable** | Whether PCIe ever bottlenecks the 3070. We have never measured link utilisation and should not claim to have (§12.9) |
-| **Our own error, surfaced by the audit** | `-DGGML_SCHED_MAX_COPIES=1` is not an option in llama.cpp. Twenty-nine occurrences to correct to `GGML_SCHED_MAX_COPIES` (§12.11) |
+| **Our own error, surfaced by the audit** | `-DLLAMA_SCHED_MAX_COPIES=1` is not an option in llama.cpp. Twenty-nine occurrences were corrected to `-DGGML_SCHED_MAX_COPIES=1` (§12.11) |
 
 > **The closing point.** Chapter 11's report reasoned about quality per byte and treated fit as
 > a detail. This one reasons about compiler flags and treats defaults as a detail — which is the
@@ -614,4 +613,3 @@ the measurement the rebuild exists to make possible. It is not a measurement the
 
 Previous: [Chapter 11 — Choosing the file](11-quant-selection-qwen38.md) ·
 Back to [README](README.md).
-

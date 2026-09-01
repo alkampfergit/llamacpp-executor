@@ -159,7 +159,7 @@ If it prints nothing, suspect missing runtime DLLs before suspecting the build.
 | `-DCMAKE_BUILD_TYPE=Release` | Mandatory. A Debug CUDA build is unusably slow. |
 | `-DCMAKE_CUDA_ARCHITECTURES="86-real;120-real"` | See §3. `-real` = SASS only; a bare number also emits unusable PTX. |
 | `-DGGML_CUDA_FA_ALL_QUANTS=ON` | Compiles the **full** flash-attention KV matrix. Without it only `f16/f16`, `bf16/bf16`, `q8_0/q8_0`, `q4_0/q4_0` exist and any other pair silently costs ~14×. Long compile, much larger binary. |
-| `-DGGML_SCHED_MAX_COPIES=1` | Disables pipeline parallelism at compile time (it is a `#define`, **not** an env var). Usually faster on mismatched GPUs. |
+| `-DGGML_SCHED_MAX_COPIES=1` | Uses one scheduler copy at compile time (it is a `#define`, **not** an env var). Primarily a memory optimisation; controlled `ub512` tests on this pair found <2% throughput change. |
 | `-DGGML_CCACHE=OFF` | Silences the "ccache not found" warning. |
 | `--target llama-server` | Build one binary instead of everything — much faster when iterating. |
 

@@ -35,6 +35,59 @@ context creation, so restart any running server.
 
 Not an issue on Linux — CUDA has always OOM'd properly there.
 
+### How to actually verify residency — and the calibration that stops a false positive
+
+`nvidia-smi` reports **dedicated** VRAM only and cannot see a spill. The WDDM counters can,
+per process and per adapter:
+
+```powershell
+(Get-Counter '\GPU Process Memory(*)\Non Local Usage').CounterSamples |
+  Where-Object { $_.InstanceName -like "pid_${serverPid}_*" }
+```
+
+`scripts/check-vram-residency.ps1` automates the whole procedure (launch, sample at peak
+during a real HTTP prefill, grep the log, verdict).
+
+> ### ⚠️ Non-zero non-local memory is NOT a spill
+> llama.cpp always keeps several hundred MiB of host-visible buffers — CPU-side weights and
+> pinned staging — and WDDM correctly counts those as non-local. Measured on this box, healthy
+> runs read **480–940 MiB**, and the **fastest configuration had the highest figure (938 MiB)**
+> while the slowest had 556 MiB. A detector that flags "non-local > 0" calls every run a spill.
+>
+> Compare against llama.cpp's own intent instead: `llama-fit-params ... -fitp on` prints a
+> `Host` row (`Host 272 0 517` → 789 MiB). A **gross** overflow shows as non-local far above
+> that budget with dedicated usage pinned at the adapter maximum.
+>
+> **But no absolute threshold is sufficient, however well calibrated.** The spill that actually
+> cost 26% of prefill on this box was **+64 MiB on a 482 MiB baseline — still 200 MiB *below*
+> the predicted budget.** Detect a spill as a **delta between two runs differing in one
+> variable**, and watch the **adapter-wide** counter
+> (`\GPU Adapter Memory(*)\Shared Usage`, all processes) as well as the per-process one: most
+> of that demotion was other processes' surfaces, invisible in llama-server's own numbers.
+> See `wiki/19-vram-residency.md`.
+
+### The real trap on a multi-GPU box: it is the DISPLAY GPU's headroom
+
+On Qwopus, `-c 130000` costs 26% of prefill against `-c 120000`. The cause is **not** the KV
+cache, the pipeline fallback, or context length — all three were measured and refuted. It is
+**free VRAM on the GPU that drives the display**, with a threshold near **500 MiB**. Below it,
+WDDM demotes ~133 MiB off that adapter (64 MiB of llama-server's own, the rest other processes')
+and prefill drops a quarter, silently.
+
+Proved by intervention, not correlation: at a *fixed* `-c 120000`, pinning **128 MiB** of ballast
+on the display GPU reproduces the whole effect, while **384 MiB** on the other GPU costs nothing
+(`scripts/ballast.cu`). So:
+
+- **Closing GPU-using desktop apps is worth up to 26% of prefill here** — a measured tuning
+  action, not housekeeping.
+- Budget `-c` to leave the display GPU ≥ 500 MiB free, and re-check when the desktop changes:
+  idle usage on the display card drifted 646 → 1065 MiB in one session, enough on its own to
+  flip a borderline config between the fast and slow bands.
+- A `-ts` change that relieves the display GPU may simply move the failure: `-ts 13,28` at
+  `-c 130000` hard-OOMs the other card.
+
+See `wiki/19-vram-residency.md`.
+
 ---
 
 ## 2. KV cache type pairs
@@ -129,15 +182,13 @@ graph_reserve: failed to allocate compute buffers
 sched_reserve: compute buffer allocation failed, retrying without pipeline parallelism
 ```
 
-**Cause:** with multiple devices llama.cpp keeps several copies (default 4) of intermediate
-activations so one GPU can start batch *n+1* while another finishes *n*. Two problems on a
-mismatched pair:
+**Cause:** with multiple devices llama.cpp can keep several copies (default 4) of intermediate
+activations. Those copies are often exactly what breaks a tight fit. The retry uses one copy.
 
-1. A pipeline runs at the speed of its slowest stage, so the fast card waits.
-2. Those extra copies are often exactly what breaks a tight fit.
-
-Measured at `-c 130048`: pipelined **1850** t/s prefill, lean path **2650** t/s
-(reproducible: 2757 / 2599 / 2594 across three runs).
+The historical 1850-versus-2650 comparison changed KV type and ubatch as well as execution
+mode. Controlled Qwopus tests later found runtime fallback and a one-copy build only **1.6%**
+apart at identical `c64000 / ub512 / ts13,28` settings. Changing only the tensor split from
+`12,29` to `13,28` gave **+12.8% prefill**. See `wiki/18-fallback-causality.md`.
 
 ### The sub-trap: the knob is not a runtime setting
 
@@ -154,19 +205,17 @@ written down as if it worked; the evidence that it does not is that a run with t
 set still allocated 1407 MiB of pipelined buffers before falling back. Any speed change
 attributed to it was variance.
 
-**Two real fixes:**
+**If the reservation memory is the problem:**
 
-1. **Rebuild (deterministic, preferred):**
+1. **Rebuild for one copy (deterministic):**
    ```
    cmake -B build -DGGML_CUDA=ON -DGGML_SCHED_MAX_COPIES=1
    ```
-2. **Raise `-ub` until the pipelined reserve fails** and let llama.cpp fall back on its own.
-   This is what currently delivers the fastest measured configuration — but it means
-   depending on an allocation failing. Free 1.4 GiB and the slower path may succeed instead.
+2. Reduce `-ub`, context, or rebalance `-ts` to restore headroom. A naturally occurring retry
+   followed by a result row is valid recovered data, but do not raise `-ub` merely to trigger it.
 
-**Rule:** on GPUs of different generation or tier, the lean path is usually faster *and*
-smaller — pursue it, but through the build flag, not an environment variable. On matched
-GPUs, leave the default.
+**Rule:** one copy is smaller; its speed must be measured. Optimise the tensor split separately
+and record whether each run used fallback.
 
 ### ⛔ And do NOT try to reach it with `-ngl`. Measured: −54% prefill.
 
@@ -283,7 +332,7 @@ largely reproduces the input.
 | `-fa off` or omitted | Compute buffers grow ~6×. Never a real option. |
 | `-mg` with `-sm layer` | No effect. Delete it. |
 | `-ub 1024` / `2048` | Double the memory for no prefill gain past 512. |
-| `-c 262144` "for headroom" | Taxes prefill ~31% even on short prompts. |
+| `-c 262144` "for headroom" | Consumes KV memory and can force slower fit compromises; the old universal 31% empty-context tax was refuted. |
 | "Smaller quant is faster" (or slower) | **Measure it.** The old "Q3_K kernels are slower than Q4_K" line compared two different fine-tunes. Same-base-model quants generate within **1.0%**; what quant moves is **prefill (76% spread) and VRAM (3.8 GiB)**, and the smallest file won both. `references/best-commandlines.md` §3. |
 | Tuning with `llama-bench` | No `-c` flag, so it never allocates the real KV cache. |
 | Multi-value sweep in one process | VRAM fragmentation; later runs read slower. |
@@ -291,5 +340,3 @@ largely reproduces the input.
 | `failed to fit params ... already set by user` | Not an error. The fitter stood down because you set `-ngl`. |
 | `cublasCreate ... resource allocation failed` | Out-of-memory under a different name. |
 | `unused tensor blk.N ... ignoring` | Expected on MTP/draft models; those weights cost nothing until `--spec-type` activates them. |
-
-

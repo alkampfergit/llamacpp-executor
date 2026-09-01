@@ -3,7 +3,8 @@
 Copy-paste commands for this machine. Each states **what it optimises**, **what it gives
 up**, and whether the numbers are **measured** or a **starting point**.
 
-Ready-to-run scripts: [`scripts/`](scripts/).
+Ready-to-run scripts:
+[`../.claude/skills/tuning-llamacpp-configs/scripts/`](../.claude/skills/tuning-llamacpp-configs/scripts/).
 
 ---
 
@@ -34,10 +35,9 @@ Do you need the full 130k window?
 
 > ### ⚠️ Do not set `GGML_SCHED_MAX_COPIES` as an environment variable
 > Earlier versions of this wiki told you to. **It has no effect** — it is a compile-time
-> `#define`, not a runtime variable (§6.2). The commands below no longer set it. The speed
-> these profiles get from non-pipelined execution comes from llama.cpp's automatic fallback
-> under memory pressure, which is reproducible (±3% over three runs) but accidental. To make
-> it deliberate, see [§7.5](#75-the-rebuild-that-would-fix-all-of-this).
+> `#define`, not a runtime variable (§6.2). The commands below no longer set it. A successful
+> automatic retry saves reservation memory, but controlled tests do not show a material `ub512`
+> speed gain from it. The large measured improvement comes from the tensor split (chapter 18).
 
 ---
 
@@ -99,11 +99,13 @@ cd S:\OsDevelop\llamacpp
 ```
 
 The `q4_0` cache is 700 MiB smaller than `q8_0`, and that is exactly what makes `-ub 1024`
-reachable — which in turn triggers the fast non-pipelined path. The two changes compound.
+reachable. This measured configuration also needs the one-copy retry to fit, but the retry is
+not the demonstrated cause of its throughput.
 
 > **Expect an alarming log line.** You will see `failed to allocate compute buffers` followed
-> by `retrying without pipeline parallelism`. **That is this profile working as intended**
-> (§6.2), not an error. Confirm `model loaded` and `listening on` follow it.
+> by `retrying without pipeline parallelism`. This profile may recover and continue; confirm
+> `model loaded` and `listening on` follow it. Treat the line as a recorded execution-mode change,
+> not as a speed feature (§6.2 and chapter 18).
 
 ---
 
@@ -292,4 +294,3 @@ Finally, to confirm long-context quality on your own settings (`-Model` is manda
 ---
 
 Next: [Chapter 8 — Troubleshooting](08-troubleshooting.md).
-
